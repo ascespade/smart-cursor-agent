@@ -4,6 +4,7 @@
 
 import * as vscode from 'vscode';
 import * as path from 'path';
+import * as fs from 'fs';
 import { DashboardData } from '../../types/ui';
 import { ProgressTracker } from '../../core/executor/progressTracker';
 
@@ -145,103 +146,39 @@ export class DashboardView {
    * Get webview HTML content
    */
   private getWebviewContent(): string {
+    if (!this.panel) {
+      return '<html><body>Error loading dashboard</body></html>';
+    }
+
+    // Read HTML, CSS, and JS files
     const htmlPath = path.join(this.context.extensionPath, 'resources', 'webview', 'dashboard.html');
     const cssPath = path.join(this.context.extensionPath, 'resources', 'webview', 'dashboard.css');
     const jsPath = path.join(this.context.extensionPath, 'resources', 'webview', 'dashboard.js');
 
-    // In production, we'd read the files and inject them
-    // For now, return a simple HTML structure
-    return `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cursor Smart Agent Dashboard</title>
-  <style>
-    body {
-      font-family: var(--vscode-font-family);
-      padding: 20px;
-      background: var(--vscode-editor-background);
-      color: var(--vscode-foreground);
+    // Get webview URIs
+    const cssUri = this.panel.webview.asWebviewUri(
+      vscode.Uri.file(cssPath)
+    );
+    const jsUri = this.panel.webview.asWebviewUri(
+      vscode.Uri.file(jsPath)
+    );
+
+    // Read HTML file and replace links with webview URIs
+    let html = fs.readFileSync(htmlPath, 'utf-8');
+    
+    if (cssUri && jsUri) {
+      // Replace CSS and JS links with webview URIs
+      html = html.replace(
+        /<link rel="stylesheet" href="dashboard\.css">/,
+        `<link rel="stylesheet" href="${cssUri}">`
+      );
+      html = html.replace(
+        /<script src="dashboard\.js"><\/script>/,
+        `<script src="${jsUri}"></script>`
+      );
     }
-    .dashboard {
-      max-width: 1400px;
-      margin: 0 auto;
-    }
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 30px;
-      padding-bottom: 20px;
-      border-bottom: 2px solid var(--vscode-panel-border);
-    }
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 20px;
-      margin-bottom: 30px;
-    }
-    .stat-card {
-      background: var(--vscode-sideBar-background);
-      border: 1px solid var(--vscode-panel-border);
-      border-radius: 8px;
-      padding: 20px;
-      text-align: center;
-    }
-    .stat-value {
-      font-size: 32px;
-      font-weight: bold;
-      color: var(--vscode-textLink-foreground);
-    }
-    .log-container {
-      max-height: 400px;
-      overflow-y: auto;
-      background: var(--vscode-editor-background);
-      border: 1px solid var(--vscode-panel-border);
-      border-radius: 4px;
-      padding: 10px;
-    }
-  </style>
-</head>
-<body>
-  <div class="dashboard">
-    <header>
-      <h1>🤖 Cursor Smart Agent Dashboard</h1>
-    </header>
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-value" id="progress">0%</div>
-        <div>Overall Progress</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value" id="errorsFixed">0</div>
-        <div>Errors Fixed</div>
-      </div>
-    </div>
-    <div class="log-container" id="logs">
-      <div>Loading...</div>
-    </div>
-  </div>
-  <script>
-    const vscode = acquireVsCodeApi();
-    window.addEventListener('message', event => {
-      const message = event.data;
-      if (message.command === 'updateDashboard') {
-        const data = message.data;
-        document.getElementById('progress').textContent = data.progress.overall + '%';
-        document.getElementById('errorsFixed').textContent = data.progress.errorsFixed;
-        const logsHtml = data.logs.map(log =>
-          '<div>' + new Date(log.timestamp).toLocaleTimeString() + ' - ' + log.message + '</div>'
-        ).join('');
-        document.getElementById('logs').innerHTML = logsHtml;
-      }
-    });
-    vscode.postMessage({ command: 'getDashboardData' });
-    setInterval(() => vscode.postMessage({ command: 'getDashboardData' }), 2000);
-  </script>
-</body>
-</html>`;
+
+    return html;
   }
 }
 

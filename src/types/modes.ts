@@ -4,6 +4,7 @@
 
 import { ProjectAnalysis, AgentRecommendation, ModeConfig } from './index';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface ModeContext {
   analysis: ProjectAnalysis;
   storage: any;
@@ -13,14 +14,19 @@ export interface ModeContext {
 export interface ModeResult {
   recommendation: AgentRecommendation;
   config: ModeConfig;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   metadata: Record<string, any>;
 }
 
 export abstract class BaseMode {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   protected context: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   protected storage: any | undefined;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   protected logger: any | undefined;
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   constructor(context: any, storage?: any, logger?: any) {
     this.context = context;
     this.storage = storage;

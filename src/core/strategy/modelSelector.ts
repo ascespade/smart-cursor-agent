@@ -52,7 +52,7 @@ export class ModelSelector {
    */
   private determinePriority(
     analysis: ProjectAnalysis,
-    modelName: string
+    _modelName: string
   ): 'critical' | 'high' | 'medium' | 'low' {
     // ChatGPT good for general code fixes
     // Claude good for complex refactoring

@@ -3,7 +3,7 @@
  */
 
 import { StorageManager } from '../utils/storage';
-import { ProjectSession, UserHistory, ProjectAnalysis, AgentRecommendation } from '../types';
+import { ProjectSession, UserHistory, ProjectAnalysis } from '../types';
 import { ConfigManager } from '../utils/config';
 
 export class HistoryManager {

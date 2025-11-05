@@ -3,7 +3,7 @@
  */
 
 import { StorageManager } from '../utils/storage';
-import { UserHistory, UserPreferences } from '../types';
+import { UserPreferences } from '../types';
 
 export class PreferenceEngine {
   constructor(private storage: StorageManager) {}
@@ -37,7 +37,7 @@ export class PreferenceEngine {
 
     // Find most used mode
     const modeCounts: Record<string, number> = {};
-    successfulSessions.forEach(s => {
+    successfulSessions.forEach(() => {
       // Extract mode from strategy or session metadata
       const mode = 'auto'; // Default, would be extracted from session
       modeCounts[mode] = (modeCounts[mode] || 0) + 1;

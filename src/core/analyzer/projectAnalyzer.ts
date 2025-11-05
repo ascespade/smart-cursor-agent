@@ -4,7 +4,6 @@
 
 import { ErrorCounter } from './errorCounter';
 import { ComplexityCalculator } from './complexityCalculator';
-import { PatternDetector } from './patternDetector';
 import { getWorkspaceRoot, readJsonFile } from '../../utils/helpers';
 import * as fs from 'fs';
 import * as path from 'path';

@@ -16,6 +16,7 @@ export class Logger {
   /**
    * Log an info message
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   info(message: string, ...args: any[]): void {
     const timestamp = new Date().toISOString();
     const formatted = `[INFO ${timestamp}] ${message}`;
@@ -28,6 +29,7 @@ export class Logger {
   /**
    * Log a warning message
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   warn(message: string, ...args: any[]): void {
     const timestamp = new Date().toISOString();
     const formatted = `[WARN ${timestamp}] ${message}`;
@@ -40,6 +42,7 @@ export class Logger {
   /**
    * Log an error message
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   error(message: string, error?: Error | unknown, ...args: any[]): void {
     const timestamp = new Date().toISOString();
     const formatted = `[ERROR ${timestamp}] ${message}`;
@@ -60,6 +63,7 @@ export class Logger {
   /**
    * Log a success message
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   success(message: string, ...args: any[]): void {
     const timestamp = new Date().toISOString();
     const formatted = `[SUCCESS ${timestamp}] ${message}`;
@@ -72,6 +76,7 @@ export class Logger {
   /**
    * Log a debug message (only in development)
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   debug(message: string, ...args: any[]): void {
     const config = vscode.workspace.getConfiguration('smartAgent');
     if (config.get('debug', false)) {

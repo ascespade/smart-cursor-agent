@@ -6,6 +6,30 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as vscode from 'vscode';
 
+// Module-level logger for helpers
+let loggerOutputChannel: vscode.OutputChannel | null = null;
+
+function getLogger(): vscode.OutputChannel {
+  if (!loggerOutputChannel) {
+    loggerOutputChannel = vscode.window.createOutputChannel('Cursor Smart Agent');
+  }
+  return loggerOutputChannel;
+}
+
+function logError(message: string, error?: unknown): void {
+  const channel = getLogger();
+  const timestamp = new Date().toISOString();
+  channel.appendLine(`[ERROR ${timestamp}] ${message}`);
+  if (error instanceof Error) {
+    channel.appendLine(`Error: ${error.message}`);
+    if (error.stack) {
+      channel.appendLine(`Stack: ${error.stack}`);
+    }
+  } else if (error) {
+    channel.appendLine(String(error));
+  }
+}
+
 /**
  * Get workspace root path
  */
@@ -36,7 +60,7 @@ export function readJsonFile<T>(filePath: string): T | null {
     const content = fs.readFileSync(filePath, 'utf-8');
     return JSON.parse(content) as T;
   } catch (error) {
-    console.error(`Failed to read JSON file ${filePath}:`, error);
+    logError(`Failed to read JSON file ${filePath}`, error);
     return null;
   }
 }
@@ -53,7 +77,7 @@ export function writeJsonFile<T>(filePath: string, data: T): boolean {
     fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
     return true;
   } catch (error) {
-    console.error(`Failed to write JSON file ${filePath}:`, error);
+    logError(`Failed to write JSON file ${filePath}`, error);
     return false;
   }
 }

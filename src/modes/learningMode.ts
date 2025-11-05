@@ -3,7 +3,7 @@
  */
 
 import { BaseMode } from '../types/modes';
-import { ProjectAnalysis, AgentRecommendation, ModeConfig, UserHistory } from '../types';
+import { ProjectAnalysis, AgentRecommendation, ModeConfig } from '../types';
 import { AgentCalculator } from '../core/strategy/agentCalculator';
 import { ModelSelector } from '../core/strategy/modelSelector';
 import { DecisionEngine } from '../core/strategy/decisionEngine';
@@ -12,6 +12,7 @@ import { StorageManager } from '../utils/storage';
 export class LearningMode extends BaseMode {
   protected storage: StorageManager;
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   constructor(context: any, storage?: any, logger?: any) {
     super(context, storage, logger);
     this.storage = storage || new StorageManager(context);

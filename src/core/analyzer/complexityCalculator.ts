@@ -5,7 +5,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import fg from 'fast-glob';
-import { getWorkspaceRoot, isTypeScriptFile, isJavaScriptFile } from '../../utils/helpers';
+import { getWorkspaceRoot } from '../../utils/helpers';
 import { ComplexityLevel } from '../../types';
 
 export interface ComplexityMetrics {
@@ -33,7 +33,7 @@ export class ComplexityCalculator {
   async calculate(): Promise<ComplexityMetrics> {
     const files = await this.getSourceFiles();
     let totalLines = 0;
-    let totalFiles = files.length;
+    const totalFiles = files.length;
     let totalFunctions = 0;
     let totalComplexity = 0;
 

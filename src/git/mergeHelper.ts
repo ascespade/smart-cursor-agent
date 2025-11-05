@@ -19,7 +19,7 @@ export class MergeHelper {
    */
   async merge(branch: string, strategy: 'ours' | 'theirs' | 'manual'): Promise<boolean> {
     try {
-      let args = ['merge', branch];
+      const args = ['merge', branch];
 
       if (strategy === 'ours') {
         args.push('-X', 'ours');

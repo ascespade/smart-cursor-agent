@@ -85,7 +85,6 @@ export class ProgressTracker {
    */
   getProgress(): ProgressInfo {
     const agents = Array.from(this.agents.values());
-    const workingAgents = agents.filter(a => a.status === 'working').length;
     const completedAgents = agents.filter(a => a.status === 'completed').length;
 
     // Calculate overall progress

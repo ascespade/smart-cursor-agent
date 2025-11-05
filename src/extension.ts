@@ -3,34 +3,15 @@
  */
 
 import * as vscode from 'vscode';
-import { ProjectAnalyzer } from './core/analyzer/projectAnalyzer';
-import { AgentCalculator } from './core/strategy/agentCalculator';
-import { ModelSelector } from './core/strategy/modelSelector';
-import { DecisionEngine } from './core/strategy/decisionEngine';
-import { PromptBuilder } from './cursor/promptBuilder';
-import { CursorIntegration } from './cursor/integration';
-import { DashboardView } from './ui/dashboard/dashboardView';
+// Lazy load heavy modules - only import essentials at activation
 import { StatusBarManager } from './ui/statusBar';
 import { StorageManager } from './utils/storage';
 import { Logger } from './utils/logger';
 import { ConfigManager } from './utils/config';
-import { NotificationManager } from './ui/notifications';
-import { QuickPickManager } from './ui/quickPick';
-import { HelpPanel } from './ui/helpPanel';
+import { DashboardView } from './ui/dashboard/dashboardView';
 import { ProgressTracker } from './core/executor/progressTracker';
-import { ErrorHandler } from './core/executor/errorHandler';
-import { CommandExecutor } from './core/executor/commandExecutor';
-import { SecurityScanner } from './security/securityScanner';
-import { HistoryManager } from './learning/historyManager';
-import { AutoMode } from './modes/autoMode';
-import { NonStopMode } from './modes/nonStopMode';
-import { LearningMode } from './modes/learningMode';
-import { SecurityMode } from './modes/securityMode';
-import { SimulationMode } from './modes/simulationMode';
-import { LazyDevMode } from './modes/lazyDevMode';
-import { SmartDevMode } from './modes/smartDevMode';
-import { SuperDevMode } from './modes/superDevMode';
-import { ProjectAnalysis, AgentRecommendation, ModeConfig } from './types';
+// Type-only imports (erased at runtime, no performance impact)
+import type { ProjectAnalysis, AgentRecommendation } from './types';
 
 let statusBar: StatusBarManager;
 let dashboardView: DashboardView;
@@ -43,30 +24,39 @@ let extensionContext: vscode.ExtensionContext;
  * Activate extension
  */
 export function activate(context: vscode.ExtensionContext) {
-  extensionContext = context;
-  logger = new Logger(context);
-  logger.info('🚀 Cursor Smart Agent Extension activated!');
+  try {
+    extensionContext = context;
+    logger = new Logger(context);
+    logger.info('🚀 Cursor Smart Agent Extension activated!');
 
-  // Initialize managers
-  storage = new StorageManager(context);
-  statusBar = new StatusBarManager(context);
-  dashboardView = new DashboardView(context);
-  progressTracker = new ProgressTracker(logger);
+    // Initialize only essential managers synchronously
+    storage = new StorageManager(context);
+    statusBar = new StatusBarManager(context);
+    dashboardView = new DashboardView(context);
+    progressTracker = new ProgressTracker(logger);
 
-  // Register all commands
-  registerCommands(context);
+    // Register all commands
+    registerCommands(context);
 
-  // Setup status bar
-  statusBar.show();
+    // Setup status bar
+    statusBar.show();
 
-  // Auto-analyze on startup if enabled
-  if (ConfigManager.isAutoAnalyzeOnStartup()) {
-    setTimeout(() => {
-      analyzeProject();
-    }, 2000);
+    // Auto-analyze on startup if enabled (defer to avoid blocking)
+    if (ConfigManager.isAutoAnalyzeOnStartup()) {
+      setTimeout(() => {
+        analyzeProject().catch(err => {
+          logger.error('Auto-analyze on startup failed', err);
+        });
+      }, 2000);
+    }
+
+    logger.info('✅ Extension ready!');
+  } catch (error) {
+    // Log error and ensure extension doesn't crash
+    const errorLogger = new Logger(context);
+    errorLogger.error('Extension activation failed', error);
+    vscode.window.showErrorMessage('Cursor Smart Agent: Activation failed. Check output for details.');
   }
-
-  logger.info('✅ Extension ready!');
 }
 
 /**
@@ -98,6 +88,13 @@ async function analyzeProject() {
   }
 
   statusBar.updateStatus('analyzing');
+
+  // Lazy load modules
+  const { NotificationManager } = await import('./ui/notifications');
+  const { ProjectAnalyzer } = await import('./core/analyzer/projectAnalyzer');
+  const { AgentCalculator } = await import('./core/strategy/agentCalculator');
+  const { ModelSelector } = await import('./core/strategy/modelSelector');
+  const { DecisionEngine } = await import('./core/strategy/decisionEngine');
 
   await NotificationManager.showProgress(
     'Analyzing project...',
@@ -178,6 +175,11 @@ async function analyzeProject() {
  * Quick fix
  */
 async function quickFix() {
+  // Lazy load modules
+  const { NotificationManager } = await import('./ui/notifications');
+  const { PromptBuilder } = await import('./cursor/promptBuilder');
+  const { CursorIntegration } = await import('./cursor/integration');
+
   const analysis = await storage.getAnalysis();
   const recommendation = await storage.getRecommendation();
 
@@ -194,7 +196,7 @@ async function quickFix() {
 
   // Get current mode
   const modeName = ConfigManager.getDefaultMode();
-  const mode = getModeInstance(modeName, storage, logger);
+  const mode = await getModeInstance(modeName, storage, logger);
 
   // Execute mode
   const strategy = await mode.execute(analysis);
@@ -335,7 +337,7 @@ function getAnalysisResultsHTML(analysis: ProjectAnalysis, recommendation: Agent
   <div class="card">
     <h2>💡 Reasoning</h2>
     <ul>
-      ${recommendation.reasoning.map(r => `<li>${r}</li>`).join('')}
+        ${recommendation.reasoning.map((r: string) => `<li>${r}</li>`).join('')}
     </ul>
   </div>
 
@@ -372,6 +374,9 @@ function openDashboard() {
  * Switch mode
  */
 async function switchMode() {
+  const { QuickPickManager } = await import('./ui/quickPick');
+  const { NotificationManager } = await import('./ui/notifications');
+
   const selected = await QuickPickManager.showModeSelection();
   if (selected) {
     await ConfigManager.update('defaultMode', selected);
@@ -380,28 +385,46 @@ async function switchMode() {
 }
 
 /**
- * Get mode instance
+ * Get mode instance (lazy loaded)
  */
-function getModeInstance(modeName: string, storage: StorageManager, logger: Logger): any {
+async function getModeInstance(modeName: string, storage: StorageManager, logger: Logger): Promise<any> {
   switch (modeName) {
-    case 'auto':
+    case 'auto': {
+      const { AutoMode } = await import('./modes/autoMode');
       return new AutoMode(undefined, storage, logger);
-    case 'non-stop':
+    }
+    case 'non-stop': {
+      const { NonStopMode } = await import('./modes/nonStopMode');
       return new NonStopMode(undefined, storage, logger);
-    case 'learning':
+    }
+    case 'learning': {
+      const { LearningMode } = await import('./modes/learningMode');
       return new LearningMode(undefined, storage, logger);
-    case 'security':
+    }
+    case 'security': {
+      const { SecurityMode } = await import('./modes/securityMode');
       return new SecurityMode(undefined, storage, logger);
-    case 'simulation':
+    }
+    case 'simulation': {
+      const { SimulationMode } = await import('./modes/simulationMode');
       return new SimulationMode(undefined, storage, logger);
-    case 'lazy':
+    }
+    case 'lazy': {
+      const { LazyDevMode } = await import('./modes/lazyDevMode');
       return new LazyDevMode(undefined, storage, logger);
-    case 'smart':
+    }
+    case 'smart': {
+      const { SmartDevMode } = await import('./modes/smartDevMode');
       return new SmartDevMode(undefined, storage, logger);
-    case 'super':
+    }
+    case 'super': {
+      const { SuperDevMode } = await import('./modes/superDevMode');
       return new SuperDevMode(undefined, storage, logger);
-    default:
+    }
+    default: {
+      const { AutoMode } = await import('./modes/autoMode');
       return new AutoMode(undefined, storage, logger);
+    }
   }
 }
 
@@ -409,6 +432,9 @@ function getModeInstance(modeName: string, storage: StorageManager, logger: Logg
  * View history
  */
 async function viewHistory() {
+  const { HistoryManager } = await import('./learning/historyManager');
+  const { NotificationManager } = await import('./ui/notifications');
+
   const historyManager = new HistoryManager(storage);
   const sessions = await historyManager.getRecentSessions(10);
 
@@ -437,6 +463,7 @@ async function viewHistory() {
  * Run simulation
  */
 async function runSimulation() {
+  const { NotificationManager } = await import('./ui/notifications');
   await NotificationManager.info('🎮 Simulation mode - Switch to simulation mode and run Quick Fix');
   switchMode();
 }
@@ -445,6 +472,9 @@ async function runSimulation() {
  * Security scan
  */
 async function securityScan() {
+  const { NotificationManager } = await import('./ui/notifications');
+  const { SecurityScanner } = await import('./security/securityScanner');
+
   await NotificationManager.showProgress('Scanning for security issues...', async (progress) => {
     try {
       const scanner = new SecurityScanner();
@@ -474,6 +504,8 @@ async function securityScan() {
  * Generate report
  */
 async function generateReport() {
+  const { NotificationManager } = await import('./ui/notifications');
+
   const analysis = await storage.getAnalysis();
   const recommendation = await storage.getRecommendation();
 
@@ -508,14 +540,16 @@ async function generateReport() {
  * Open playground
  */
 async function openPlayground() {
+  const { NotificationManager } = await import('./ui/notifications');
   await NotificationManager.info('🎮 Playground - Coming soon!');
 }
 
 /**
  * Show help
  */
-function showHelp() {
+async function showHelp() {
   if (extensionContext) {
+    const { HelpPanel } = await import('./ui/helpPanel');
     HelpPanel.show(extensionContext);
   } else {
     // Fallback: open external URL
@@ -561,6 +595,8 @@ function estimateCost(hours: number, modelCount: number): number {
  * Deactivate extension
  */
 export function deactivate() {
-  logger.info('👋 Extension deactivated');
+  if (logger) {
+    logger.info('👋 Extension deactivated');
+  }
 }
 

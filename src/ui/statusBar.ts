@@ -3,7 +3,6 @@
  */
 
 import * as vscode from 'vscode';
-import { ConfigManager } from '../utils/config';
 
 export class StatusBarManager {
   private statusBarItem: vscode.StatusBarItem;
@@ -43,13 +42,14 @@ export class StatusBarManager {
         this.statusBarItem.tooltip = 'Analyzing project...';
         this.statusBarItem.backgroundColor = undefined;
         break;
-      case 'working':
+      case 'working': {
         const progress = data?.progress || 0;
         const errors = data?.errors || 0;
         this.statusBarItem.text = `$(sync~spin) Fixing ${errors} errors (${progress}%)`;
         this.statusBarItem.tooltip = `Fixing errors... ${progress}% complete`;
         this.statusBarItem.backgroundColor = undefined;
         break;
+      }
       case 'completed':
         this.statusBarItem.text = '$(check) Smart Agent';
         this.statusBarItem.tooltip = 'All errors fixed!';

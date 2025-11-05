@@ -10,7 +10,7 @@ export class HelpPanel {
   /**
    * Show help panel
    */
-  static show(context: vscode.ExtensionContext): void {
+  static show(_context: vscode.ExtensionContext): void {
     if (this.panel) {
       this.panel.reveal();
       return;

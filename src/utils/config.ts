@@ -20,6 +20,7 @@ export class ConfigManager {
    */
   static async update(
     key: string,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     value: any,
     target: vscode.ConfigurationTarget = vscode.ConfigurationTarget.Global
   ): Promise<void> {

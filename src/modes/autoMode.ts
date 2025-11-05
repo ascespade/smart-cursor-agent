@@ -12,6 +12,7 @@ import { StorageManager } from '../utils/storage';
 export class AutoMode extends BaseMode {
   protected storage: StorageManager;
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   constructor(context: any, storage?: any, logger?: any) {
     super(context, storage, logger);
     this.storage = storage || new StorageManager(context);

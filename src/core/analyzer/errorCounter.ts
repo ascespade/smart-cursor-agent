@@ -3,7 +3,6 @@
  */
 
 import * as vscode from 'vscode';
-import * as path from 'path';
 import { execa } from 'execa';
 import { getWorkspaceRoot } from '../../utils/helpers';
 import { ErrorBreakdown } from '../../types';
@@ -139,8 +138,10 @@ export class ErrorCounter {
         let warnings = 0;
 
         if (Array.isArray(output)) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           output.forEach((file: any) => {
             if (file.messages) {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               file.messages.forEach((msg: any) => {
                 if (msg.severity === 2) {
                   errors++;

@@ -4,9 +4,14 @@
 
 import * as vscode from 'vscode';
 import { ProjectAnalysis, AgentRecommendation, UserHistory, ProjectSession } from '../types';
+import { Logger } from './logger';
 
 export class StorageManager {
-  constructor(private context: vscode.ExtensionContext) {}
+  private logger: Logger;
+
+  constructor(private context: vscode.ExtensionContext, logger?: Logger) {
+    this.logger = logger || new Logger(context);
+  }
 
   /**
    * Save global data (across all workspaces)
@@ -15,7 +20,7 @@ export class StorageManager {
     try {
       await this.context.globalState.update(key, value);
     } catch (error) {
-      console.error(`Failed to save global data for key ${key}:`, error);
+      this.logger.error(`Failed to save global data for key ${key}`, error);
       throw error;
     }
   }
@@ -27,7 +32,7 @@ export class StorageManager {
     try {
       return this.context.globalState.get<T>(key);
     } catch (error) {
-      console.error(`Failed to get global data for key ${key}:`, error);
+      this.logger.error(`Failed to get global data for key ${key}`, error);
       return undefined;
     }
   }
@@ -39,7 +44,7 @@ export class StorageManager {
     try {
       await this.context.workspaceState.update(key, value);
     } catch (error) {
-      console.error(`Failed to save workspace data for key ${key}:`, error);
+      this.logger.error(`Failed to save workspace data for key ${key}`, error);
       throw error;
     }
   }
@@ -51,7 +56,7 @@ export class StorageManager {
     try {
       return this.context.workspaceState.get<T>(key);
     } catch (error) {
-      console.error(`Failed to get workspace data for key ${key}:`, error);
+      this.logger.error(`Failed to get workspace data for key ${key}`, error);
       return undefined;
     }
   }

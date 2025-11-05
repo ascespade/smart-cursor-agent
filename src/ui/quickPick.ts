@@ -3,7 +3,6 @@
  */
 
 import * as vscode from 'vscode';
-import { ConfigManager } from '../utils/config';
 
 export interface QuickPickOption {
   label: string;
