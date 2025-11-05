@@ -1,0 +1,265 @@
+{
+  "name": "cursor-smart-agent",
+  "displayName": "Cursor Smart Agent",
+  "description": "AI-powered smart agent orchestrator for Cursor - automate error fixing with intelligence",
+  "version": "1.0.0",
+  "publisher": "cursor-smart-agent",
+  "icon": "resources/icons/logo.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cursor-smart-agent/cursor-smart-agent"
+  },
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Linters",
+    "Machine Learning",
+    "Other"
+  ],
+  "keywords": [
+    "cursor",
+    "ai",
+    "automation",
+    "typescript",
+    "eslint",
+    "error-fixing",
+    "code-quality",
+    "refactoring"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "smartAgent.analyze",
+        "title": "Analyze Project",
+        "category": "Smart Agent",
+        "icon": "$(search)"
+      },
+      {
+        "command": "smartAgent.quickFix",
+        "title": "Quick Fix (Auto Mode)",
+        "category": "Smart Agent",
+        "icon": "$(zap)"
+      },
+      {
+        "command": "smartAgent.openDashboard",
+        "title": "Open Dashboard",
+        "category": "Smart Agent",
+        "icon": "$(dashboard)"
+      },
+      {
+        "command": "smartAgent.switchMode",
+        "title": "Switch Mode",
+        "category": "Smart Agent",
+        "icon": "$(gear)"
+      },
+      {
+        "command": "smartAgent.viewHistory",
+        "title": "View History",
+        "category": "Smart Agent",
+        "icon": "$(history)"
+      },
+      {
+        "command": "smartAgent.runSimulation",
+        "title": "Run Simulation",
+        "category": "Smart Agent",
+        "icon": "$(play)"
+      },
+      {
+        "command": "smartAgent.securityScan",
+        "title": "Security Scan",
+        "category": "Smart Agent",
+        "icon": "$(shield)"
+      },
+      {
+        "command": "smartAgent.generateReport",
+        "title": "Generate Report",
+        "category": "Smart Agent",
+        "icon": "$(file-text)"
+      },
+      {
+        "command": "smartAgent.openPlayground",
+        "title": "Open Playground",
+        "category": "Smart Agent",
+        "icon": "$(beaker)"
+      },
+      {
+        "command": "smartAgent.help",
+        "title": "Help & Documentation",
+        "category": "Smart Agent",
+        "icon": "$(question)"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "smartAgent.analyze",
+        "key": "ctrl+shift+a",
+        "mac": "cmd+shift+a"
+      },
+      {
+        "command": "smartAgent.quickFix",
+        "key": "ctrl+shift+f",
+        "mac": "cmd+shift+f"
+      },
+      {
+        "command": "smartAgent.openDashboard",
+        "key": "ctrl+shift+d",
+        "mac": "cmd+shift+d"
+      }
+    ],
+    "configuration": {
+      "title": "Cursor Smart Agent",
+      "properties": {
+        "smartAgent.defaultMode": {
+          "type": "string",
+          "enum": ["auto", "non-stop", "smart", "lazy", "super", "security", "simulation", "learning"],
+          "default": "auto",
+          "description": "Default mode for the extension"
+        },
+        "smartAgent.autoAnalyzeOnStartup": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically analyze project when workspace opens"
+        },
+        "smartAgent.nonStopMode": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable non-stop execution (no questions)"
+        },
+        "smartAgent.confidenceThreshold": {
+          "type": "number",
+          "default": 0,
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Confidence threshold for asking questions (0 = never ask)"
+        },
+        "smartAgent.defaultAgentCount": {
+          "type": "number",
+          "default": 4,
+          "minimum": 2,
+          "maximum": 12,
+          "description": "Default number of agents (0 = auto-calculate)"
+        },
+        "smartAgent.preferredModels": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["ChatGPT", "Claude", "DeepSeek", "Gemini"]
+          },
+          "default": ["ChatGPT", "Claude"],
+          "description": "Preferred AI models to use"
+        },
+        "smartAgent.gitIntegration": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable Git integration (auto-branch, commit)"
+        },
+        "smartAgent.securityScanning": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable security scanning"
+        },
+        "smartAgent.learningEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable learning mode (improves over time)"
+        },
+        "smartAgent.showNotifications": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show progress notifications"
+        },
+        "smartAgent.soundEffects": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable sound effects for milestones"
+        },
+        "smartAgent.historyRetentionDays": {
+          "type": "number",
+          "default": 90,
+          "description": "Days to keep history data"
+        },
+        "smartAgent.maxCostPerSession": {
+          "type": "number",
+          "default": 20,
+          "description": "Maximum cost per fix session (USD)"
+        },
+        "smartAgent.maxTimePerSession": {
+          "type": "number",
+          "default": 480,
+          "description": "Maximum time per session (minutes)"
+        }
+      }
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "smartAgent",
+          "title": "Smart Agent",
+          "icon": "resources/icons/sidebar.svg"
+        }
+      ]
+    },
+    "views": {
+      "smartAgent": [
+        {
+          "id": "smartAgent.dashboard",
+          "name": "Dashboard",
+          "type": "webview"
+        },
+        {
+          "id": "smartAgent.history",
+          "name": "History"
+        },
+        {
+          "id": "smartAgent.modes",
+          "name": "Modes"
+        }
+      ]
+    },
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "smartAgent.analyze",
+          "group": "smartAgent",
+          "when": "explorerResourceIsFolder"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "smartAgent.analyze",
+          "group": "smartAgent"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run package",
+    "compile": "webpack --mode development",
+    "watch": "webpack --mode development --watch",
+    "package": "webpack --mode production --devtool hidden-source-map",
+    "test": "node ./out/test/runTest.js",
+    "lint": "eslint src --ext ts"
+  },
+  "devDependencies": {
+    "@types/node": "^18.17.0",
+    "@types/vscode": "^1.80.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.45.0",
+    "typescript": "^5.1.6",
+    "webpack": "^5.88.0",
+    "webpack-cli": "^5.1.4",
+    "ts-loader": "^9.4.4"
+  },
+  "dependencies": {
+    "execa": "^8.0.1",
+    "fast-glob": "^3.3.1"
+  }
+}
+
