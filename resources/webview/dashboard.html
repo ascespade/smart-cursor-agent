@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cursor Smart Agent Dashboard</title>
+  <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+  <div class="dashboard">
+    <header>
+      <h1>🤖 Cursor Smart Agent Dashboard</h1>
+      <div class="controls">
+        <button id="pauseBtn" class="btn btn-secondary">⏸ Pause</button>
+        <button id="resumeBtn" class="btn btn-secondary" style="display: none;">▶ Resume</button>
+        <button id="stopBtn" class="btn btn-danger">⏹ Stop</button>
+        <button id="exportBtn" class="btn btn-primary">📄 Export Report</button>
+      </div>
+    </header>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Overall Progress</div>
+        <div class="stat-value" id="overallProgress">0%</div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label">Errors Fixed</div>
+        <div class="stat-value" id="errorsFixed">0</div>
+        <div class="stat-sublabel">of <span id="totalErrors">0</span> total</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label">Speed</div>
+        <div class="stat-value" id="speed">0</div>
+        <div class="stat-sublabel">errors/minute</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label">ETA</div>
+        <div class="stat-value" id="eta">-</div>
+        <div class="stat-sublabel">minutes remaining</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label">Cost</div>
+        <div class="stat-value" id="cost">$0.00</div>
+        <div class="stat-sublabel">estimated</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label">Time</div>
+        <div class="stat-value" id="time">0m</div>
+        <div class="stat-sublabel">elapsed</div>
+      </div>
+    </div>
+
+    <div class="content-grid">
+      <div class="panel">
+        <h2>🤖 Agent Status</h2>
+        <div id="agentCards" class="agent-cards">
+          <!-- Agent cards will be inserted here -->
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>📊 Error Breakdown</h2>
+        <div id="errorChart" class="chart-container">
+          <canvas id="errorChartCanvas"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel full-width">
+      <h2>📝 Live Activity Log</h2>
+      <div class="log-controls">
+        <input type="text" id="logSearch" placeholder="Search logs..." class="search-input">
+        <select id="logFilter" class="filter-select">
+          <option value="all">All Levels</option>
+          <option value="info">Info</option>
+          <option value="warning">Warning</option>
+          <option value="error">Error</option>
+          <option value="success">Success</option>
+        </select>
+      </div>
+      <div id="logContainer" class="log-container">
+        <!-- Logs will be inserted here -->
+      </div>
+    </div>
+  </div>
+
+  <script src="dashboard.js"></script>
+</body>
+</html>
+
