@@ -165,7 +165,7 @@ export class DashboardView {
 
     // Read HTML file and replace links with webview URIs
     let html = fs.readFileSync(htmlPath, 'utf-8');
-    
+
     if (cssUri && jsUri) {
       // Replace CSS and JS links with webview URIs
       html = html.replace(

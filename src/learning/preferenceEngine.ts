@@ -72,6 +72,7 @@ export class PreferenceEngine {
   /**
    * Update preferences based on new session
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async updatePreferences(success: boolean, strategy: any): Promise<void> {
     const history = await this.storage.getHistory();
     if (!history) {

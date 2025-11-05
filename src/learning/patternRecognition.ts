@@ -41,6 +41,7 @@ export class PatternRecognition {
   /**
    * Detect agent count pattern
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private detectAgentCountPattern(sessions: any[]): string | null {
     const counts = sessions.map(s => s.strategy.total);
     const avg = counts.reduce((a, b) => a + b, 0) / counts.length;
@@ -56,10 +57,12 @@ export class PatternRecognition {
   /**
    * Detect model pattern
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private detectModelPattern(sessions: any[]): string | null {
     const modelCounts: Record<string, number> = {};
 
     sessions.forEach(s => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       s.strategy.models.forEach((m: any) => {
         modelCounts[m.name] = (modelCounts[m.name] || 0) + 1;
       });
@@ -79,6 +82,7 @@ export class PatternRecognition {
   /**
    * Detect error reduction pattern
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private detectErrorReductionPattern(sessions: any[]): string | null {
     const reductions = sessions.map(s => {
       const before = s.errors.before;

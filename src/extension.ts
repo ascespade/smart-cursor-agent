@@ -35,8 +35,18 @@ export function activate(context: vscode.ExtensionContext) {
     dashboardView = new DashboardView(context);
     progressTracker = new ProgressTracker(logger);
 
+    // Initialize API (lazy load)
+    import('./api/extensionApi').then(({ extensionAPI }) => {
+      extensionAPI.initialize(context, storage, logger);
+    });
+
     // Register all commands
     registerCommands(context);
+
+    // Register API commands (lazy load)
+    import('./api/commandHandler').then(({ registerApiCommands }) => {
+      registerApiCommands(context);
+    });
 
     // Setup status bar
     statusBar.show();
@@ -387,6 +397,7 @@ async function switchMode() {
 /**
  * Get mode instance (lazy loaded)
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function getModeInstance(modeName: string, storage: StorageManager, logger: Logger): Promise<any> {
   switch (modeName) {
     case 'auto': {

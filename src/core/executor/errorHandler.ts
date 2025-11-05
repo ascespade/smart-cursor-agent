@@ -50,6 +50,7 @@ export class ErrorHandler {
     if (error instanceof Error) {
       return {
         message: error.message,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         code: (error as any).code,
         severity: this.determineSeverity(error),
         recoverable: this.isRecoverable(error),

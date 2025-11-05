@@ -73,6 +73,7 @@ export interface Phase {
 export interface ModeConfig {
   name: string;
   enabled: boolean;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   settings: Record<string, any>;
 }
 

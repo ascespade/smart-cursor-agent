@@ -93,6 +93,46 @@
         "title": "Help & Documentation",
         "category": "Smart Agent",
         "icon": "$(question)"
+      },
+      {
+        "command": "smartAgent.api.analyze",
+        "title": "API: Analyze Project",
+        "category": "Smart Agent API"
+      },
+      {
+        "command": "smartAgent.api.calculateAgents",
+        "title": "API: Calculate Agents",
+        "category": "Smart Agent API"
+      },
+      {
+        "command": "smartAgent.api.getAnalysis",
+        "title": "API: Get Analysis",
+        "category": "Smart Agent API"
+      },
+      {
+        "command": "smartAgent.api.getRecommendation",
+        "title": "API: Get Recommendation",
+        "category": "Smart Agent API"
+      },
+      {
+        "command": "smartAgent.api.securityScan",
+        "title": "API: Security Scan",
+        "category": "Smart Agent API"
+      },
+      {
+        "command": "smartAgent.api.getProjectStats",
+        "title": "API: Get Project Stats",
+        "category": "Smart Agent API"
+      },
+      {
+        "command": "smartAgent.api.getWorkspaceInfo",
+        "title": "API: Get Workspace Info",
+        "category": "Smart Agent API"
+      },
+      {
+        "command": "smartAgent.api.call",
+        "title": "API: Call Method",
+        "category": "Smart Agent API"
       }
     ],
     "keybindings": [

@@ -133,6 +133,7 @@ export class ProjectAnalyzer {
     outdated: number;
   }> {
     const packageJsonPath = path.join(this.workspaceRoot, 'package.json');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const packageJson = readJsonFile<any>(packageJsonPath);
 
     if (!packageJson) {
@@ -160,6 +161,7 @@ export class ProjectAnalyzer {
    */
   private async determineProjectType(): Promise<ProjectType> {
     const packageJsonPath = path.join(this.workspaceRoot, 'package.json');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const packageJson = readJsonFile<any>(packageJsonPath);
 
     if (!packageJson) {

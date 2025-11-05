@@ -4,10 +4,11 @@
 
 import { ProjectAnalysis, AgentRecommendation, ModeConfig } from './index';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface ModeContext {
   analysis: ProjectAnalysis;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   storage: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   logger: any;
 }
 

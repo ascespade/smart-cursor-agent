@@ -94,6 +94,7 @@ export class LearningMode extends BaseMode {
     return 'Continuously improves recommendations by learning from your past fixes and preferences. Gets smarter over time.';
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private applyLearning(calculated: number, learningData: any): number {
     if (!learningData.weights || Object.keys(learningData.weights).length === 0) {
       return calculated;
@@ -107,6 +108,7 @@ export class LearningMode extends BaseMode {
   private estimateTimeWithLearning(
     errorCount: number,
     agentCount: number,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     learningData: any
   ): number {
     const baseMinutesPerError = 3;
@@ -119,6 +121,7 @@ export class LearningMode extends BaseMode {
     return Math.ceil(totalMinutes / 60);
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private calculateLearningConfidence(analysis: ProjectAnalysis, learningData: any): number {
     let confidence = 70;
 
