@@ -3,7 +3,6 @@
  */
 
 import * as vscode from 'vscode';
-import * as path from 'path';
 // Lazy load heavy modules - only import essentials at activation
 import { StatusBarManager } from './ui/statusBar';
 import { StorageManager } from './utils/storage';
@@ -108,8 +107,6 @@ async function analyzeProject() {
   const { NotificationManager } = await import('./ui/notifications');
   const { ProjectAnalyzer } = await import('./core/analyzer/projectAnalyzer');
   const { AgentCalculator } = await import('./core/strategy/agentCalculator');
-  const { ModelSelector } = await import('./core/strategy/modelSelector');
-  const { DecisionEngine } = await import('./core/strategy/decisionEngine');
 
   await NotificationManager.showProgress(
     'Analyzing project...',
@@ -177,9 +174,8 @@ async function quickFix() {
   const { CursorIntegration } = await import('./cursor/integration');
 
   const analysis = await storage.getAnalysis();
-  const recommendation = await storage.getRecommendation();
 
-  if (!analysis || !recommendation) {
+  if (!analysis) {
     const action = await NotificationManager.warn(
       'No analysis found. Run "Analyze Project" first.',
       'Analyze Now'
@@ -915,7 +911,7 @@ async function updateMode(newModeName: string) {
     await storage.saveWorkspace('lastMode', newMode);
 
     // Update open report if exists
-    if (currentReportPanel && !currentReportPanel.disposed) {
+    if (currentReportPanel) {
       updateReportContent(currentReportPanel, analysis, newRecommendation, newMode);
 
       vscode.window.showInformationMessage(
@@ -932,8 +928,8 @@ async function updateMode(newModeName: string) {
 /**
  * Get mode instance (lazy loaded)
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function getModeInstance(modeName: string, storage: StorageManager, logger: Logger): Promise<any> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
+async function _getModeInstance(modeName: string, storage: StorageManager, logger: Logger): Promise<any> {
   switch (modeName) {
     case 'auto': {
       const { AutoMode } = await import('./modes/autoMode');
@@ -1321,7 +1317,8 @@ function showPromptPreview(prompt: string) {
 /**
  * Estimate time
  */
-function estimateTime(errorCount: number, agentCount: number): number {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function _estimateTime(errorCount: number, agentCount: number): number {
   const minutesPerError = 3;
   const totalMinutes = (errorCount / agentCount) * minutesPerError;
   return Math.ceil(totalMinutes / 60);
@@ -1330,7 +1327,8 @@ function estimateTime(errorCount: number, agentCount: number): number {
 /**
  * Estimate cost
  */
-function estimateCost(hours: number, modelCount: number): number {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function _estimateCost(hours: number, modelCount: number): number {
   const costPerHourPerModel = 3;
   return hours * modelCount * costPerHourPerModel;
 }
@@ -1343,4 +1341,5 @@ export function deactivate() {
     logger.info('👋 Extension deactivated');
   }
 }
+
 

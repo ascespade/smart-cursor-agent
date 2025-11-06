@@ -3,7 +3,7 @@
  */
 
 import * as vscode from 'vscode';
-import { MODE_DEFINITIONS, getModeDefinition } from '../types/modes';
+import { MODE_DEFINITIONS } from '../types/modes';
 import { ConfigManager } from '../utils/config';
 
 export interface QuickPickOption {
@@ -12,6 +12,7 @@ export interface QuickPickOption {
   detail?: string;
   value: string;
   icon?: string;
+  picked?: boolean;
 }
 
 export class QuickPickManager {

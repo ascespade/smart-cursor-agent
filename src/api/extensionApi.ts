@@ -5,6 +5,7 @@
 
 import * as vscode from 'vscode';
 import { ProjectAnalysis, AgentRecommendation } from '../types';
+import { ModeDefinition } from '../types/modes';
 import { ProjectAnalyzer } from '../core/analyzer/projectAnalyzer';
 import { AgentCalculator } from '../core/strategy/agentCalculator';
 import { StorageManager } from '../utils/storage';
@@ -108,8 +109,16 @@ export class ExtensionAPI {
         projectAnalysis = analysisResult.data;
       }
 
+      // Get mode from storage or config
+      const { ConfigManager } = await import('../utils/config');
+      const { getModeDefinition } = await import('../types/modes');
+      const storedMode = this.storage
+        ? await this.storage.getWorkspace<ModeDefinition>('lastMode')
+        : undefined;
+      const mode = storedMode || getModeDefinition(ConfigManager.getDefaultMode());
+
       const calculator = new AgentCalculator();
-      const agentResult = calculator.calculate(projectAnalysis);
+      const agentResult = calculator.calculate(projectAnalysis, mode);
 
       const { ModelSelector } = await import('../core/strategy/modelSelector');
       const { DecisionEngine } = await import('../core/strategy/decisionEngine');
@@ -333,7 +342,6 @@ export class ExtensionAPI {
 
       // Get all files in workspace (first 100)
       const files: string[] = [];
-      const pattern = new vscode.RelativePattern(workspaceFolder, '**/*');
       // Note: This is a simplified version. In production, use vscode.workspace.findFiles
 
       return {

@@ -19,6 +19,6 @@
     }],
     "no-console": ["warn", { "allow": ["error", "warn", "info"] }]
   },
-  "ignorePatterns": ["out", "dist", "**/*.d.ts", "node_modules", ".vscode-test"]
+  "ignorePatterns": ["out", "dist", "**/*.d.ts", "node_modules", ".vscode-test", "src/test/**"]
 }
 

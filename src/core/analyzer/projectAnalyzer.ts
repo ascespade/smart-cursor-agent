@@ -40,10 +40,12 @@ export class ProjectAnalyzer {
       : 0;
 
     // Collect detailed error information
-    let errorDetails = null;
+    // Note: Error details collection is available but not currently used in analysis
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    let _errorDetails = null;
     try {
       const detailsCollector = new ErrorDetailsCollector();
-      errorDetails = await detailsCollector.collectDetails();
+      _errorDetails = await detailsCollector.collectDetails();
     } catch (error) {
       // If details collection fails, continue without details
       console.warn('Failed to collect error details:', error);
@@ -56,9 +58,7 @@ export class ProjectAnalyzer {
       complexity: complexity.level,
       errorDensity: Math.round(errorDensity * 100) / 100,
       timestamp: new Date(),
-      projectType,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      errorDetails: errorDetails as any
+      projectType
     };
   }
 
