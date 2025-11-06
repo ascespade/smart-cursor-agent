@@ -335,6 +335,7 @@ export class ExtensionAPI {
 
       // Get all files in workspace (first 100)
       const files: string[] = [];
+      const pattern = new vscode.RelativePattern(workspaceFolder, '**/*');
       // Note: This is a simplified version. In production, use vscode.workspace.findFiles
 
       return {

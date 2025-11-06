@@ -3,6 +3,7 @@
  */
 
 import * as vscode from 'vscode';
+import * as path from 'path';
 // Lazy load heavy modules - only import essentials at activation
 import { StatusBarManager } from './ui/statusBar';
 import { StorageManager } from './utils/storage';
@@ -106,7 +107,9 @@ async function analyzeProject() {
   // Lazy load modules
   const { NotificationManager } = await import('./ui/notifications');
   const { ProjectAnalyzer } = await import('./core/analyzer/projectAnalyzer');
-        const { AgentCalculator } = await import('./core/strategy/agentCalculator');
+  const { AgentCalculator } = await import('./core/strategy/agentCalculator');
+  const { ModelSelector } = await import('./core/strategy/modelSelector');
+  const { DecisionEngine } = await import('./core/strategy/decisionEngine');
 
   await NotificationManager.showProgress(
     'Analyzing project...',
@@ -190,7 +193,7 @@ async function quickFix() {
   // Get mode from storage or config
   const mode = await storage.getWorkspace<ModeDefinition>('lastMode') || getModeDefinition(ConfigManager.getDefaultMode());
 
-  // Recalculate recommendation if not found or mode changed
+  // Recalculate recommendation if not found
   if (!recommendation) {
     const { AgentCalculator } = await import('./core/strategy/agentCalculator');
     const calculator = new AgentCalculator();
@@ -928,6 +931,50 @@ async function updateMode(newModeName: string) {
   }
 }
 
+/**
+ * Get mode instance (lazy loaded)
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function getModeInstance(modeName: string, storage: StorageManager, logger: Logger): Promise<any> {
+  switch (modeName) {
+    case 'auto': {
+      const { AutoMode } = await import('./modes/autoMode');
+      return new AutoMode(undefined, storage, logger);
+    }
+    case 'non-stop': {
+      const { NonStopMode } = await import('./modes/nonStopMode');
+      return new NonStopMode(undefined, storage, logger);
+    }
+    case 'learning': {
+      const { LearningMode } = await import('./modes/learningMode');
+      return new LearningMode(undefined, storage, logger);
+    }
+    case 'security': {
+      const { SecurityMode } = await import('./modes/securityMode');
+      return new SecurityMode(undefined, storage, logger);
+    }
+    case 'simulation': {
+      const { SimulationMode } = await import('./modes/simulationMode');
+      return new SimulationMode(undefined, storage, logger);
+    }
+    case 'lazy': {
+      const { LazyDevMode } = await import('./modes/lazyDevMode');
+      return new LazyDevMode(undefined, storage, logger);
+    }
+    case 'smart': {
+      const { SmartDevMode } = await import('./modes/smartDevMode');
+      return new SmartDevMode(undefined, storage, logger);
+    }
+    case 'super': {
+      const { SuperDevMode } = await import('./modes/superDevMode');
+      return new SuperDevMode(undefined, storage, logger);
+    }
+    default: {
+      const { AutoMode } = await import('./modes/autoMode');
+      return new AutoMode(undefined, storage, logger);
+    }
+  }
+}
 
 /**
  * View history
@@ -1273,6 +1320,22 @@ function showPromptPreview(prompt: string) {
   });
 }
 
+/**
+ * Estimate time
+ */
+function estimateTime(errorCount: number, agentCount: number): number {
+  const minutesPerError = 3;
+  const totalMinutes = (errorCount / agentCount) * minutesPerError;
+  return Math.ceil(totalMinutes / 60);
+}
+
+/**
+ * Estimate cost
+ */
+function estimateCost(hours: number, modelCount: number): number {
+  const costPerHourPerModel = 3;
+  return hours * modelCount * costPerHourPerModel;
+}
 
 /**
  * Deactivate extension

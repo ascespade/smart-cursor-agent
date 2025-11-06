@@ -3,7 +3,7 @@
  */
 
 import * as vscode from 'vscode';
-import { MODE_DEFINITIONS } from '../types/modes';
+import { MODE_DEFINITIONS, getModeDefinition } from '../types/modes';
 import { ConfigManager } from '../utils/config';
 
 export interface QuickPickOption {
@@ -39,9 +39,9 @@ export class QuickPickManager {
     // Sort: Current first, then Free, then Paid
     modes.sort((a, b) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const aIsCurrent = (a as any).isCurrent;
+      const aIsCurrent = (a as any).isCurrent || false;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const bIsCurrent = (b as any).isCurrent;
+      const bIsCurrent = (b as any).isCurrent || false;
       if (aIsCurrent) return -1;
       if (bIsCurrent) return 1;
 
