@@ -163,7 +163,16 @@
       "properties": {
         "smartAgent.defaultMode": {
           "type": "string",
-          "enum": ["auto", "non-stop", "smart", "lazy", "super", "security", "simulation", "learning"],
+          "enum": [
+            "auto",
+            "non-stop",
+            "smart",
+            "lazy",
+            "super",
+            "security",
+            "simulation",
+            "learning"
+          ],
           "default": "auto",
           "description": "Default mode for the extension"
         },
@@ -195,9 +204,17 @@
           "type": "array",
           "items": {
             "type": "string",
-            "enum": ["ChatGPT", "Claude", "DeepSeek", "Gemini"]
+            "enum": [
+              "ChatGPT",
+              "Claude",
+              "DeepSeek",
+              "Gemini"
+            ]
           },
-          "default": ["ChatGPT", "Claude"],
+          "default": [
+            "ChatGPT",
+            "Claude"
+          ],
           "description": "Preferred AI models to use"
         },
         "smartAgent.gitIntegration": {
@@ -297,15 +314,15 @@
     "@types/vscode": "^1.80.0",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
+    "@vscode/vsce": "^3.6.2",
     "eslint": "^8.45.0",
+    "ts-loader": "^9.4.4",
     "typescript": "^5.1.6",
     "webpack": "^5.88.0",
-    "webpack-cli": "^5.1.4",
-    "ts-loader": "^9.4.4"
+    "webpack-cli": "^5.1.4"
   },
   "dependencies": {
     "execa": "^8.0.1",
     "fast-glob": "^3.3.1"
   }
 }
-

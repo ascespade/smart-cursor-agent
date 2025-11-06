@@ -1,12 +1,5 @@
 /**
  * Error counter for TypeScript and ESLint errors
- *
- * Detects:
- * - Syntax errors (parse errors, invalid syntax)
- * - Type errors (type checking failures)
- * - Build errors (compilation errors, missing imports)
- * - ESLint errors (code quality issues)
- * - Warnings (non-critical issues)
  */
 
 import * as vscode from 'vscode';
@@ -80,17 +73,10 @@ export class ErrorCounter {
 
   /**
    * Count TypeScript errors
-   * This includes:
-   * - Syntax errors (parse errors)
-   * - Type errors (type checking)
-   * - Build errors (compilation errors)
    */
   private async countTypeScriptErrors(): Promise<number> {
     try {
-      // Run tsc --noEmit to detect all errors:
-      // - Syntax errors (TS1005, TS1128, etc.)
-      // - Type errors (TS2322, TS2345, etc.)
-      // - Build errors (TS2307, TS2304, etc.)
+      // Try to run tsc --noEmit to get errors
       const result = await execa('npx', ['tsc', '--noEmit', '--pretty', 'false'], {
         cwd: this.workspaceRoot,
         reject: false,
@@ -101,7 +87,7 @@ export class ErrorCounter {
         return 0; // No errors
       }
 
-      // Parse output to count all errors (syntax, type, build)
+      // Parse output to count errors
       const errorLines = result.stdout
         .split('\n')
         .filter(line => line.includes('error TS'));
