@@ -60,6 +60,8 @@ function logWarn(message: string, ...args: unknown[]): void {
 
 export class ErrorCounter {
   private workspaceRoot: string;
+  private resultCache: Map<string, { count: number; timestamp: number }> = new Map();
+  private readonly CACHE_TTL = 5000; // 5 seconds
 
   constructor() {
     const root = getWorkspaceRoot();
@@ -69,6 +71,53 @@ export class ErrorCounter {
     // Normalize path for Windows compatibility
     this.workspaceRoot = path.normalize(root);
     logInfo(`ErrorCounter initialized with workspace root: ${this.workspaceRoot}`);
+  }
+
+  /**
+   * Wait for VS Code diagnostics to be ready
+   */
+  private async waitForDiagnostics(timeout: number = 5000): Promise<boolean> {
+    const startTime = Date.now();
+    while (Date.now() - startTime < timeout) {
+      const diagnostics = vscode.languages.getDiagnostics();
+      if (diagnostics) {
+        const diagnosticsArray = Array.from(diagnostics);
+        if (diagnosticsArray.length > 0) {
+          logInfo(`Diagnostics ready after ${Date.now() - startTime}ms with ${diagnosticsArray.length} files`);
+          return true; // Diagnostics متوفرة
+        }
+      }
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+    logWarn(`Diagnostics not ready after ${timeout}ms timeout`);
+    return false;
+  }
+
+  /**
+   * Get cached result if available
+   */
+  private getCachedResult(key: string): number | null {
+    const cached = this.resultCache.get(key);
+    if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
+      logInfo(`Using cached result for ${key}: ${cached.count}`);
+      return cached.count;
+    }
+    return null;
+  }
+
+  /**
+   * Set cached result
+   */
+  private setCachedResult(key: string, count: number): void {
+    this.resultCache.set(key, { count, timestamp: Date.now() });
+  }
+
+  /**
+   * Invalidate cache
+   */
+  private invalidateCache(): void {
+    this.resultCache.clear();
+    logInfo('Cache invalidated');
   }
 
   /**
@@ -130,11 +179,33 @@ export class ErrorCounter {
   }
 
   /**
-   * Count TypeScript errors
+   * Count TypeScript errors - improved strategy: try diagnostics first, then command
    */
   private async countTypeScriptErrors(): Promise<number> {
     logInfo('Starting TypeScript error counting...');
     
+    // Check cache first
+    const cached = this.getCachedResult('typescript');
+    if (cached !== null) {
+      return cached;
+    }
+
+    // Strategy 1: Wait for and use VS Code diagnostics first (most reliable)
+    logInfo('Waiting for VS Code diagnostics to be ready...');
+    const diagnosticsReady = await this.waitForDiagnostics(5000);
+    
+    if (diagnosticsReady) {
+      const diagnosticsCount = await this.countTypeScriptErrorsFromDiagnostics();
+      logInfo(`TypeScript errors from diagnostics: ${diagnosticsCount}`);
+      
+      // If we got a reasonable count from diagnostics, use it
+      if (diagnosticsCount > 0) {
+        this.setCachedResult('typescript', diagnosticsCount);
+        return diagnosticsCount;
+      }
+    }
+
+    // Strategy 2: Try tsc command as fallback
     try {
       // Ensure workspace root is properly normalized for Windows
       const normalizedRoot = path.normalize(this.workspaceRoot);
@@ -144,8 +215,13 @@ export class ErrorCounter {
       const result = await execa('npx', ['tsc', '--noEmit', '--pretty', 'false'], {
         cwd: normalizedRoot,
         reject: false,
-        timeout: 30000,
-        shell: process.platform === 'win32' // Use shell on Windows for better path handling
+        timeout: 60000, // Increased timeout
+        maxBuffer: 50 * 1024 * 1024, // 50MB buffer
+        shell: process.platform === 'win32', // Use shell on Windows for better path handling
+        env: {
+          ...process.env,
+          PATH: process.env.PATH
+        }
       });
 
       logInfo(`TypeScript command executed. Exit code: ${result.exitCode}`);
@@ -153,6 +229,7 @@ export class ErrorCounter {
 
       if (result.exitCode === 0) {
         logInfo('TypeScript compilation successful - no errors found');
+        this.setCachedResult('typescript', 0);
         return 0; // No errors
       }
 
@@ -165,60 +242,97 @@ export class ErrorCounter {
         logWarn('TypeScript command failed but no errors were parsed. This might indicate a parsing issue.');
         logWarn(`stdout sample: ${result.stdout.substring(0, 500)}`);
         logWarn(`stderr sample: ${result.stderr.substring(0, 500)}`);
+        
+        // Try diagnostics again as last resort
+        const diagnosticsCount = await this.countTypeScriptErrorsFromDiagnostics();
+        if (diagnosticsCount > 0) {
+          logInfo(`Using diagnostics count instead: ${diagnosticsCount}`);
+          this.setCachedResult('typescript', diagnosticsCount);
+          return diagnosticsCount;
+        }
       }
 
+      this.setCachedResult('typescript', errorCount);
       return errorCount;
     } catch (error) {
       logError('Failed to execute TypeScript command', error);
       logWarn('Falling back to VS Code diagnostics for TypeScript errors');
       // If tsc is not available, try to use VS Code diagnostics
-      return this.countTypeScriptErrorsFromDiagnostics();
+      const diagnosticsCount = await this.countTypeScriptErrorsFromDiagnostics();
+      this.setCachedResult('typescript', diagnosticsCount);
+      return diagnosticsCount;
     }
   }
 
   /**
-   * Parse TypeScript compiler output to count errors
+   * Parse TypeScript compiler output to count errors - improved with better patterns
    */
   private parseTypeScriptOutput(stdout: string, stderr: string): number {
-    const combinedOutput = stdout + '\n' + stderr;
+    // tsc outputs errors to stderr primarily, but check both
+    const combinedOutput = (stderr || stdout || '').trim();
     logInfo(`Parsing TypeScript output (total length: ${combinedOutput.length} chars)`);
 
-    // Multiple patterns to match TypeScript errors
+    if (!combinedOutput) {
+      return 0;
+    }
+
+    // Use Set to avoid counting duplicate errors
+    const errorSet = new Set<string>();
+
+    // Multiple patterns to match TypeScript errors - more comprehensive
     const errorPatterns = [
-      /error TS\d+/g,                    // Standard: error TS1234
-      /error TS\d+:/g,                   // With colon: error TS1234:
-      /\(\d+,\d+\): error TS\d+/g,       // With position: (10,5): error TS1234
-      /\.tsx?\(\d+,\d+\): error TS\d+/g, // With file: file.ts(10,5): error TS1234
+      // Standard: file.ts(line,col): error TS1234: message
+      /^(.+?)\((\d+),(\d+)\):\s*error\s+TS(\d+):/gm,
+      // Alternative: file.ts:line:col - error TS1234: message
+      /^(.+?):(\d+):(\d+)\s*-\s*error\s+TS(\d+):/gm,
+      // Simple: error TS1234
+      /error\s+TS(\d+)/gi,
+      // With file prefix: file.ts: error TS1234
+      /^(.+?):\s*error\s+TS(\d+):/gm,
     ];
 
-    let maxCount = 0;
+    // Try each pattern and collect unique errors
     for (const pattern of errorPatterns) {
-      const matches = combinedOutput.match(pattern);
-      if (matches) {
-        const count = matches.length;
-        logInfo(`Pattern ${pattern.source} matched ${count} errors`);
-        maxCount = Math.max(maxCount, count);
+      const matches = combinedOutput.matchAll(pattern);
+      for (const match of matches) {
+        // Extract error code (TS number)
+        const errorCode = match[4] || match[1] || match[2] || match[5];
+        if (errorCode) {
+          // Create unique identifier: file + line + error code
+          const file = match[1] || '';
+          const line = match[2] || match[3] || '';
+          const uniqueId = `${file}:${line}:TS${errorCode}`;
+          errorSet.add(uniqueId);
+        }
       }
     }
 
-    // Fallback: count lines containing "error TS"
-    if (maxCount === 0) {
+    let errorCount = errorSet.size;
+    logInfo(`Found ${errorCount} unique TypeScript errors using pattern matching`);
+
+    // Fallback: count lines containing "error TS" if no patterns matched
+    if (errorCount === 0) {
       const errorLines = combinedOutput
-        .split('\n')
+        .split(/\r?\n/)
         .filter(line => {
-          const lowerLine = line.toLowerCase();
-          return lowerLine.includes('error ts') || lowerLine.includes('error: ts');
+          const lowerLine = line.toLowerCase().trim();
+          return (lowerLine.includes('error ts') || lowerLine.includes('error: ts')) && 
+                 !lowerLine.startsWith('npm') && 
+                 !lowerLine.startsWith('node');
         });
-      maxCount = errorLines.length;
-      logInfo(`Fallback line-based counting found ${maxCount} error lines`);
+      errorCount = errorLines.length;
+      logInfo(`Fallback line-based counting found ${errorCount} error lines`);
     }
 
     // Additional validation: check for common error indicators
-    if (maxCount === 0 && (stdout.includes('error') || stderr.includes('error'))) {
+    if (errorCount === 0 && (stdout.includes('error') || stderr.includes('error'))) {
       logWarn('Output contains "error" but no TypeScript errors were matched. Output might be in unexpected format.');
+      // Log sample for debugging
+      const sample = combinedOutput.substring(0, 1000);
+      logWarn(`Output sample: ${sample}`);
     }
 
-    return maxCount;
+    return errorCount;
   }
 
   /**
@@ -250,11 +364,35 @@ export class ErrorCounter {
   }
 
   /**
-   * Count ESLint errors
+   * Count ESLint errors - improved strategy: try diagnostics first, then command
    */
   private async countESLintErrors(): Promise<{ errors: number; warnings: number }> {
     logInfo('Starting ESLint error counting...');
     
+    // Check cache first
+    const cachedKey = 'eslint';
+    const cached = this.resultCache.get(cachedKey);
+    if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
+      logInfo(`Using cached ESLint result: errors=${(cached.count as any).errors}, warnings=${(cached.count as any).warnings}`);
+      return cached.count as { errors: number; warnings: number };
+    }
+
+    // Strategy 1: Wait for and use VS Code diagnostics first (most reliable)
+    logInfo('Waiting for VS Code diagnostics to be ready...');
+    const diagnosticsReady = await this.waitForDiagnostics(5000);
+    
+    if (diagnosticsReady) {
+      const diagnosticsCount = await this.countESLintErrorsFromDiagnostics();
+      logInfo(`ESLint errors from diagnostics: ${diagnosticsCount.errors} errors, ${diagnosticsCount.warnings} warnings`);
+      
+      // If we got reasonable counts from diagnostics, use them
+      if (diagnosticsCount.errors > 0 || diagnosticsCount.warnings > 0) {
+        this.resultCache.set(cachedKey, { count: diagnosticsCount, timestamp: Date.now() });
+        return diagnosticsCount;
+      }
+    }
+
+    // Strategy 2: Try eslint command as fallback
     try {
       // Ensure workspace root is properly normalized for Windows
       const normalizedRoot = path.normalize(this.workspaceRoot);
@@ -264,8 +402,13 @@ export class ErrorCounter {
       const result = await execa('npx', ['eslint', '.', '--format', 'json'], {
         cwd: normalizedRoot,
         reject: false,
-        timeout: 30000,
-        shell: process.platform === 'win32' // Use shell on Windows for better path handling
+        timeout: 60000, // Increased timeout
+        maxBuffer: 50 * 1024 * 1024, // 50MB buffer
+        shell: process.platform === 'win32', // Use shell on Windows for better path handling
+        env: {
+          ...process.env,
+          PATH: process.env.PATH
+        }
       });
 
       logInfo(`ESLint command executed. Exit code: ${result.exitCode}`);
@@ -273,7 +416,9 @@ export class ErrorCounter {
 
       if (result.exitCode === 0 && result.stdout.trim() === '') {
         logInfo('ESLint found no errors or warnings');
-        return { errors: 0, warnings: 0 };
+        const result = { errors: 0, warnings: 0 };
+        this.resultCache.set(cachedKey, { count: result, timestamp: Date.now() });
+        return result;
       }
 
       // Parse output to count errors and warnings
@@ -285,14 +430,25 @@ export class ErrorCounter {
         logWarn('ESLint command failed but no errors/warnings were parsed. This might indicate a parsing issue.');
         logWarn(`stdout sample: ${result.stdout.substring(0, 500)}`);
         logWarn(`stderr sample: ${result.stderr.substring(0, 500)}`);
+        
+        // Try diagnostics again as last resort
+        const diagnosticsCount = await this.countESLintErrorsFromDiagnostics();
+        if (diagnosticsCount.errors > 0 || diagnosticsCount.warnings > 0) {
+          logInfo(`Using diagnostics count instead: ${diagnosticsCount.errors} errors, ${diagnosticsCount.warnings} warnings`);
+          this.resultCache.set(cachedKey, { count: diagnosticsCount, timestamp: Date.now() });
+          return diagnosticsCount;
+        }
       }
 
+      this.resultCache.set(cachedKey, { count: counts, timestamp: Date.now() });
       return counts;
     } catch (error) {
       logError('Failed to execute ESLint command', error);
       logWarn('Falling back to VS Code diagnostics for ESLint errors');
       // If eslint is not available, try to use VS Code diagnostics
-      return this.countESLintErrorsFromDiagnostics();
+      const diagnosticsCount = await this.countESLintErrorsFromDiagnostics();
+      this.resultCache.set(cachedKey, { count: diagnosticsCount, timestamp: Date.now() });
+      return diagnosticsCount;
     }
   }
 
