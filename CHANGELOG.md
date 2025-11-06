@@ -221,9 +221,82 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.0] - 2025-01-XX
+
+### Fixed
+
+- **Total Calculation Bug**: Fixed incorrect total error count - now includes TypeScript + ESLint + Warnings
+  - Previously showed only errors without warnings
+  - Now correctly displays "Total Issues" = TypeScript + ESLint + Warnings
+
+### Added
+
+- **Error Tree Visualization**: Collapsible tree structure showing errors grouped by directory
+  - Hierarchical folder/file structure
+  - Error count per folder/file
+  - Expandable/collapsible nodes
+  - Visual indicators for error severity
+
+- **Mode Definition System**: New `ModeDefinition` interface with comprehensive mode configuration
+  - `modelCount`: Number of AI models used (1-4)
+  - `maxAgents`: Maximum total agents (agentsPerModel × modelCount)
+  - `cost`: Free or Paid mode indicator
+  - `features`: List of mode features
+  - All 8 modes now have proper definitions
+
+- **Live Report Updates**: Report panel updates automatically when mode changes
+  - No need to reopen report
+  - Real-time mode badge updates
+  - Cost warnings update dynamically
+
+- **Export Report Feature**: Export analysis reports in multiple formats
+  - Markdown (.md) format
+  - JSON format with full data
+  - HTML format with interactive tree
+  - Save to workspace folder
+  - Open file/folder options
+
+- **Mode Badge in Report**: Clickable mode badge in report header
+  - Shows current mode with cost indicator (FREE/PAID)
+  - Click to change mode
+  - Visual cost warnings for paid modes
+
+### Changed
+
+- **Agent Calculator**: Updated to use ModeDefinition system
+  - Maximum agents per model: 4 (was 12 total)
+  - Total agents calculation: `agentsPerModel × modelCount`
+  - Examples:
+    - Auto Mode: 4 agents (1 model × 4)
+    - Smart Mode: 8 agents (2 models × 4)
+    - Super Mode: 16 agents (4 models × 4)
+
+- **All Mode Classes**: Simplified to use AgentCalculator with ModeDefinition
+  - Removed duplicate calculation logic
+  - Consistent behavior across all modes
+  - Proper mode configuration from definitions
+
+- **Report HTML**: Complete inline HTML/CSS/JS (no external files)
+  - Self-contained webview
+  - Better performance
+  - Easier maintenance
+
+- **Mode Picker**: Enhanced with better information
+  - Shows model count
+  - Shows max agents
+  - Shows cost (FREE/PAID)
+  - Sorted: Current → Free → Paid
+
+### Improved
+
+- **Error Counter**: Now includes warnings in total calculation
+- **Prompt Builder**: Includes mode information and correct total
+- **Quick Pick**: Uses MODE_DEFINITIONS for consistency
+- **Package.json**: Updated defaultAgentCount settings (max 4 per model)
+
 ## [Unreleased]
 
-### Planned for v1.1
+### Planned for v1.2
 
 - Additional AI model support (Gemini, local models)
 

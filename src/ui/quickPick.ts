@@ -3,6 +3,8 @@
  */
 
 import * as vscode from 'vscode';
+import { MODE_DEFINITIONS, getModeDefinition } from '../types/modes';
+import { ConfigManager } from '../utils/config';
 
 export interface QuickPickOption {
   label: string;
@@ -17,60 +19,40 @@ export class QuickPickManager {
    * Show mode selection
    */
   static async showModeSelection(): Promise<string | undefined> {
-    const modes: QuickPickOption[] = [
-      {
-        label: '$(brain) Auto Mode',
-        description: 'AI chooses best strategy based on history',
-        detail: 'Recommended for most users',
-        value: 'auto'
-      },
-      {
-        label: '$(sync) Non-Stop Mode',
-        description: 'Work continuously without questions',
-        detail: 'Perfect for large projects (500+ errors)',
-        value: 'non-stop'
-      },
-      {
-        label: '$(light-bulb) Smart Developer',
-        description: 'Context-aware suggestions',
-        detail: 'Perfect for daily development',
-        value: 'smart'
-      },
-      {
-        label: '$(coffee) Lazy Developer',
-        description: 'Minimal input, maximum output',
-        detail: 'Describe project and let AI build it',
-        value: 'lazy'
-      },
-      {
-        label: '$(rocket) Super Developer',
-        description: 'Multi-project orchestration',
-        detail: 'Perfect for monorepos and teams',
-        value: 'super'
-      },
-      {
-        label: '$(shield) Security Mode',
-        description: 'Security-first approach',
-        detail: 'Perfect for production code',
-        value: 'security'
-      },
-      {
-        label: '$(play) Simulation',
-        description: 'Preview changes without applying',
-        detail: 'Safe testing mode',
-        value: 'simulation'
-      },
-      {
-        label: '$(book) Learning Mode',
-        description: 'Improves over time',
-        detail: 'Gets smarter with each use',
-        value: 'learning'
+    const currentMode = ConfigManager.getDefaultMode();
+
+    const modes: QuickPickOption[] = Object.values(MODE_DEFINITIONS).map(mode => ({
+      label: mode.displayName + (mode.name === currentMode ? ' ✓' : ''),
+      description: mode.description,
+      detail: [
+        `${mode.modelCount} model${mode.modelCount > 1 ? 's' : ''}`,
+        `Up to ${mode.maxAgents} agents`,
+        mode.cost === 'free' ? '🆓 FREE' : '💳 PAID'
+      ].join(' • '),
+      value: mode.name,
+      picked: mode.name === currentMode
+    }));
+
+    // Sort: Current first, then Free, then Paid
+    modes.sort((a, b) => {
+      if (a.picked) return -1;
+      if (b.picked) return 1;
+
+      const aDef = MODE_DEFINITIONS[a.value];
+      const bDef = MODE_DEFINITIONS[b.value];
+
+      if (aDef.cost !== bDef.cost) {
+        return aDef.cost === 'free' ? -1 : 1;
       }
-    ];
+
+      return 0;
+    });
 
     const selected = await vscode.window.showQuickPick(modes, {
       placeHolder: 'Select execution mode',
-      title: 'Cursor Smart Agent - Mode Selection'
+      title: 'Cursor Smart Agent - Mode Selection',
+      matchOnDescription: true,
+      matchOnDetail: true
     });
 
     return selected?.value;

@@ -4,6 +4,7 @@
 
 import { ErrorCounter } from './errorCounter';
 import { ComplexityCalculator } from './complexityCalculator';
+import { ErrorDetailsCollector } from './errorDetails';
 import { getWorkspaceRoot, readJsonFile } from '../../utils/helpers';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -34,9 +35,19 @@ export class ProjectAnalyzer {
       this.determineProjectType()
     ]);
 
-    const errorDensity = size.linesOfCode > 0
+      const errorDensity = size.linesOfCode > 0
       ? (errors.total / size.linesOfCode) * 1000
       : 0;
+
+    // Collect detailed error information
+    let errorDetails = null;
+    try {
+      const detailsCollector = new ErrorDetailsCollector();
+      errorDetails = await detailsCollector.collectDetails();
+    } catch (error) {
+      // If details collection fails, continue without details
+      console.warn('Failed to collect error details:', error);
+    }
 
     return {
       errors,
@@ -45,7 +56,9 @@ export class ProjectAnalyzer {
       complexity: complexity.level,
       errorDensity: Math.round(errorDensity * 100) / 100,
       timestamp: new Date(),
-      projectType
+      projectType,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      errorDetails: errorDetails as any
     };
   }
 

@@ -7,6 +7,11 @@ AI-powered smart agent orchestrator for Cursor - automate error fixing with inte
 ### 🎯 Core Features
 
 - **Smart Analysis**: Automatically analyze TypeScript + ESLint errors
+  - **Syntax Errors**: Detects parse errors and invalid syntax (TS1005, TS1128, etc.)
+  - **Type Errors**: Detects type checking failures (TS2322, TS2345, etc.)
+  - **Build Errors**: Detects compilation errors and missing imports (TS2307, TS2304, etc.)
+  - **ESLint Errors**: Detects code quality issues and style violations
+  - **Warnings**: Detects non-critical issues that should be addressed
 - **Dynamic Agent Calculation**: Auto-calculate optimal agent count
 - **Multi-Model Strategy**: Use multiple AI models in parallel
 - **Non-Stop Mode**: Work continuously without interruptions
