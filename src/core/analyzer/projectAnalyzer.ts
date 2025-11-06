@@ -51,7 +51,7 @@ export class ProjectAnalyzer {
       console.warn('Failed to collect error details:', error);
     }
 
-    return {
+    const analysis: ProjectAnalysis = {
       errors,
       size,
       dependencies,
@@ -60,6 +60,22 @@ export class ProjectAnalyzer {
       timestamp: new Date(),
       projectType
     };
+
+    // Log final analysis for debugging
+    console.log('Final Project Analysis:', JSON.stringify({
+      errors: {
+        typescript: analysis.errors.typescript,
+        eslint: analysis.errors.eslint,
+        warnings: analysis.errors.warnings,
+        total: analysis.errors.total
+      },
+      size: analysis.size,
+      complexity: analysis.complexity,
+      errorDensity: analysis.errorDensity,
+      projectType: analysis.projectType
+    }, null, 2));
+
+    return analysis;
   }
 
   /**
