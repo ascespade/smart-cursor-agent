@@ -75,6 +75,7 @@ export class ErrorDetailsCollector {
 
   /**
    * Collect TypeScript errors with details
+   * Includes: syntax errors, type errors, build errors
    */
   private async collectTypeScriptErrors(): Promise<ErrorDetail[]> {
     const errors: ErrorDetail[] = [];
@@ -228,7 +229,7 @@ export class ErrorDetailsCollector {
 
     for (const error of errors) {
       const relativePath = error.file.replace(this.workspaceRoot + '/', '');
-      
+
       if (!fileMap.has(relativePath)) {
         fileMap.set(relativePath, {
           file: relativePath,

@@ -163,16 +163,7 @@
       "properties": {
         "smartAgent.defaultMode": {
           "type": "string",
-          "enum": [
-            "auto",
-            "non-stop",
-            "smart",
-            "lazy",
-            "super",
-            "security",
-            "simulation",
-            "learning"
-          ],
+          "enum": ["auto", "non-stop", "smart", "lazy", "super", "security", "simulation", "learning"],
           "default": "auto",
           "description": "Default mode for the extension"
         },
@@ -204,17 +195,9 @@
           "type": "array",
           "items": {
             "type": "string",
-            "enum": [
-              "ChatGPT",
-              "Claude",
-              "DeepSeek",
-              "Gemini"
-            ]
+            "enum": ["ChatGPT", "Claude", "DeepSeek", "Gemini"]
           },
-          "default": [
-            "ChatGPT",
-            "Claude"
-          ],
+          "default": ["ChatGPT", "Claude"],
           "description": "Preferred AI models to use"
         },
         "smartAgent.gitIntegration": {
@@ -307,27 +290,22 @@
     "watch": "webpack --mode development --watch",
     "package": "webpack --mode production --devtool hidden-source-map",
     "test": "node ./out/test/runTest.js",
-    "test:unit": "mocha --require ts-node/register 'src/test/suite/**/*.test.ts'",
     "lint": "eslint src --ext ts"
   },
   "devDependencies": {
-    "@types/glob": "^8.1.0",
-    "@types/mocha": "^10.0.10",
     "@types/node": "^18.17.0",
     "@types/vscode": "^1.80.0",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
-    "@vscode/test-electron": "^2.5.2",
     "eslint": "^8.45.0",
-    "glob": "^10.4.5",
-    "mocha": "^10.8.2",
-    "ts-loader": "^9.4.4",
     "typescript": "^5.1.6",
     "webpack": "^5.88.0",
-    "webpack-cli": "^5.1.4"
+    "webpack-cli": "^5.1.4",
+    "ts-loader": "^9.4.4"
   },
   "dependencies": {
     "execa": "^8.0.1",
     "fast-glob": "^3.3.1"
   }
 }
+
