@@ -190,7 +190,7 @@ async function quickFix() {
     return;
   }
 
-  // Get mode from storage or config
+  // Get mode from storage or config (default to 'auto')
   const mode = await storage.getWorkspace<ModeDefinition>('lastMode') || getModeDefinition(ConfigManager.getDefaultMode());
 
   // Recalculate recommendation if not found
