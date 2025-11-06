@@ -19,6 +19,7 @@ export function registerApiCommands(context: vscode.ExtensionContext): void {
 
     // Calculate agents
     vscode.commands.registerCommand('smartAgent.api.calculateAgents', async (analysis?: unknown) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return await extensionAPI.calculateAgents(analysis as any);
     }),
 

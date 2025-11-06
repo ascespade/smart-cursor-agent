@@ -7,7 +7,6 @@ import * as vscode from 'vscode';
 import { ProjectAnalysis, AgentRecommendation } from '../types';
 import { ProjectAnalyzer } from '../core/analyzer/projectAnalyzer';
 import { AgentCalculator } from '../core/strategy/agentCalculator';
-import { ModelSelector } from '../core/strategy/modelSelector';
 import { StorageManager } from '../utils/storage';
 import { Logger } from '../utils/logger';
 import { SecurityScanner } from '../security/securityScanner';
@@ -111,13 +110,13 @@ export class ExtensionAPI {
 
       const calculator = new AgentCalculator();
       const agentResult = calculator.calculate(projectAnalysis);
-      
+
       const { ModelSelector } = await import('../core/strategy/modelSelector');
       const { DecisionEngine } = await import('../core/strategy/decisionEngine');
-      
+
       const modelSelector = new ModelSelector();
       const models = modelSelector.selectModels(projectAnalysis, agentResult.total);
-      
+
       // Create recommendation from agent result
       const decisionEngine = new DecisionEngine();
       const strategy = decisionEngine.makeStrategy(projectAnalysis, {
@@ -247,7 +246,7 @@ export class ExtensionAPI {
       const results = await scanner.scan();
 
       // Filter issues by type
-      const vulnerabilities = results.issues.filter(i => 
+      const vulnerabilities = results.issues.filter(i =>
         i.type === 'sql-injection' || i.type === 'xss' || i.type === 'dangerous'
       );
       const secrets = results.issues.filter(i => i.type === 'secret');
@@ -336,7 +335,7 @@ export class ExtensionAPI {
       const files: string[] = [];
       const pattern = new vscode.RelativePattern(workspaceFolder, '**/*');
       // Note: This is a simplified version. In production, use vscode.workspace.findFiles
-      
+
       return {
         success: true,
         data: {
@@ -375,25 +374,25 @@ export async function callExtensionAPI(
   switch (method) {
     case 'analyzeProject':
       return await api.analyzeProject();
-    
+
     case 'calculateAgents':
       return await api.calculateAgents(params?.analysis as ProjectAnalysis);
-    
+
     case 'getAnalysis':
       return await api.getAnalysis(params?.forceRefresh as boolean);
-    
+
     case 'getRecommendation':
       return await api.getRecommendation(params?.forceRefresh as boolean);
-    
+
     case 'securityScan':
       return await api.securityScan();
-    
+
     case 'getProjectStats':
       return await api.getProjectStats();
-    
+
     case 'getWorkspaceInfo':
       return api.getWorkspaceInfo();
-    
+
     default:
       return {
         success: false,
