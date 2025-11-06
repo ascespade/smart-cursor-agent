@@ -108,8 +108,10 @@ export class ExtensionAPI {
         projectAnalysis = analysisResult.data;
       }
 
+      const { getModeDefinition } = await import('../types/modes');
+      const mode = getModeDefinition('auto'); // Default to auto mode for API
       const calculator = new AgentCalculator();
-      const agentResult = calculator.calculate(projectAnalysis);
+      const agentResult = calculator.calculate(projectAnalysis, mode);
 
       const { ModelSelector } = await import('../core/strategy/modelSelector');
       const { DecisionEngine } = await import('../core/strategy/decisionEngine');
@@ -333,7 +335,6 @@ export class ExtensionAPI {
 
       // Get all files in workspace (first 100)
       const files: string[] = [];
-      const pattern = new vscode.RelativePattern(workspaceFolder, '**/*');
       // Note: This is a simplified version. In production, use vscode.workspace.findFiles
 
       return {

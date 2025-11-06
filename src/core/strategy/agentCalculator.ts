@@ -4,7 +4,6 @@
 
 import { ProjectAnalysis, AgentRecommendation, ModelConfig } from '../../types';
 import { ModeDefinition } from '../../types/modes';
-import { ConfigManager } from '../../utils/config';
 
 export interface AgentCalculationResult {
   total: number;
@@ -119,7 +118,7 @@ export class AgentCalculator {
    */
   private assignPriority(
     index: number,
-    totalModels: number
+    _totalModels: number
   ): 'critical' | 'high' | 'medium' | 'low' {
     if (index === 0) return 'critical';
     if (index === 1) return 'high';
@@ -217,7 +216,13 @@ export class AgentCalculator {
   /**
    * Generate phases
    */
-  private generatePhases(models: ModelConfig[]): any[] {
+  private generatePhases(models: ModelConfig[]): Array<{
+    name: string;
+    models: string[];
+    agents: number;
+    estimatedTime: number;
+    dependencies: string[];
+  }> {
     if (models.length === 1) {
       return [{
         name: 'Single Phase',

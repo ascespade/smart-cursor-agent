@@ -3,7 +3,7 @@
  */
 
 import * as vscode from 'vscode';
-import { MODE_DEFINITIONS, getModeDefinition } from '../types/modes';
+import { MODE_DEFINITIONS } from '../types/modes';
 import { ConfigManager } from '../utils/config';
 
 export interface QuickPickOption {
@@ -21,22 +21,29 @@ export class QuickPickManager {
   static async showModeSelection(): Promise<string | undefined> {
     const currentMode = ConfigManager.getDefaultMode();
 
-    const modes: QuickPickOption[] = Object.values(MODE_DEFINITIONS).map(mode => ({
-      label: mode.displayName + (mode.name === currentMode ? ' ✓' : ''),
-      description: mode.description,
-      detail: [
-        `${mode.modelCount} model${mode.modelCount > 1 ? 's' : ''}`,
-        `Up to ${mode.maxAgents} agents`,
-        mode.cost === 'free' ? '🆓 FREE' : '💳 PAID'
-      ].join(' • '),
-      value: mode.name,
-      picked: mode.name === currentMode
-    }));
+    const modes: QuickPickOption[] = Object.values(MODE_DEFINITIONS).map(mode => {
+      const isCurrent = mode.name === currentMode;
+      return {
+        label: mode.displayName + (isCurrent ? ' ✓' : ''),
+        description: mode.description,
+        detail: [
+          `${mode.modelCount} model${mode.modelCount > 1 ? 's' : ''}`,
+          `Up to ${mode.maxAgents} agents`,
+          mode.cost === 'free' ? '🆓 FREE' : '💳 PAID'
+        ].join(' • '),
+        value: mode.name,
+        isCurrent
+      };
+    });
 
     // Sort: Current first, then Free, then Paid
     modes.sort((a, b) => {
-      if (a.picked) return -1;
-      if (b.picked) return 1;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const aIsCurrent = (a as any).isCurrent;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const bIsCurrent = (b as any).isCurrent;
+      if (aIsCurrent) return -1;
+      if (bIsCurrent) return 1;
 
       const aDef = MODE_DEFINITIONS[a.value];
       const bDef = MODE_DEFINITIONS[b.value];

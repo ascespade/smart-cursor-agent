@@ -2,8 +2,7 @@
  * Error grouper - builds tree structure from error breakdown
  */
 
-import * as path from 'path';
-import { ErrorBreakdown } from '../../types/analysis';
+import { ErrorBreakdown } from '../../types';
 
 export interface ErrorNode {
   type: 'folder' | 'file';

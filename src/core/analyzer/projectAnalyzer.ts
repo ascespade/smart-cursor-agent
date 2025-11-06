@@ -49,17 +49,23 @@ export class ProjectAnalyzer {
       console.warn('Failed to collect error details:', error);
     }
 
-    return {
+    const result: ProjectAnalysis = {
       errors,
       size,
       dependencies,
       complexity: complexity.level,
       errorDensity: Math.round(errorDensity * 100) / 100,
       timestamp: new Date(),
-      projectType,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      errorDetails: errorDetails as any
+      projectType
     };
+
+    // Add errorDetails if available (optional field)
+    if (errorDetails) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (result as any).errorDetails = errorDetails;
+    }
+
+    return result;
   }
 
   /**
