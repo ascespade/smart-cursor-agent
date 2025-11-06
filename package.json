@@ -101,6 +101,12 @@
         "icon": "$(question)"
       },
       {
+        "command": "smartAgent.comprehensiveAudit",
+        "title": "Comprehensive Code Audit",
+        "category": "Smart Agent",
+        "icon": "$(checklist)"
+      },
+      {
         "command": "smartAgent.api.analyze",
         "title": "API: Analyze Project",
         "category": "Smart Agent API"

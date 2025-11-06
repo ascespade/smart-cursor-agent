@@ -51,6 +51,13 @@ export function registerApiCommands(context: vscode.ExtensionContext): void {
     // Generic API call handler
     vscode.commands.registerCommand('smartAgent.api.call', async (method: string, params?: Record<string, unknown>) => {
       return await callExtensionAPI(method, params);
+    }),
+
+    // Comprehensive audit
+    vscode.commands.registerCommand('smartAgent.api.comprehensiveAudit', async () => {
+      const { AuditRunner } = await import('../core/analyzer/auditRunner');
+      const runner = new AuditRunner(context);
+      return await runner.runAudit();
     })
   );
 }

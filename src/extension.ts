@@ -87,7 +87,8 @@ function registerCommands(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('smartAgent.generateReport', generateReport),
     vscode.commands.registerCommand('smartAgent.exportReport', exportReport),
     vscode.commands.registerCommand('smartAgent.openPlayground', openPlayground),
-    vscode.commands.registerCommand('smartAgent.help', showHelp)
+    vscode.commands.registerCommand('smartAgent.help', showHelp),
+    vscode.commands.registerCommand('smartAgent.comprehensiveAudit', comprehensiveAudit)
   );
 }
 
@@ -1331,6 +1332,99 @@ function _estimateTime(errorCount: number, agentCount: number): number {
 function _estimateCost(hours: number, modelCount: number): number {
   const costPerHourPerModel = 3;
   return hours * modelCount * costPerHourPerModel;
+}
+
+/**
+ * Comprehensive Code Audit
+ */
+async function comprehensiveAudit() {
+  const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+  if (!workspaceFolder) {
+    vscode.window.showErrorMessage('No workspace folder open!');
+    return;
+  }
+
+  try {
+    logger.info('🔍 Starting comprehensive code audit...');
+    
+    // Show progress
+    await vscode.window.withProgress({
+      location: vscode.ProgressLocation.Notification,
+      title: 'Running Comprehensive Code Audit',
+      cancellable: false
+    }, async (progress) => {
+      progress.report({ increment: 0, message: 'Initializing audit...' });
+
+      // Import and run audit
+      const { AuditRunner } = await import('./core/analyzer/auditRunner');
+      const runner = new AuditRunner(extensionContext);
+      
+      progress.report({ increment: 30, message: 'Running TypeScript audit...' });
+      progress.report({ increment: 30, message: 'Running ESLint audit...' });
+      progress.report({ increment: 20, message: 'Checking dependencies...' });
+      progress.report({ increment: 20, message: 'Generating report...' });
+
+      const report = await runner.runAudit();
+
+      // Show results
+      if (report.passed) {
+        vscode.window.showInformationMessage(
+          `✅ Audit PASSED! Code Quality Score: ${report.codeQualityScore}/100`,
+          'View Report'
+        ).then(selection => {
+          if (selection === 'View Report') {
+            // Report is already shown in output channel
+          }
+        });
+      } else {
+        vscode.window.showWarningMessage(
+          `❌ Audit FAILED! Found ${report.totalErrors} errors and ${report.totalWarnings} warnings. Code Quality Score: ${report.codeQualityScore}/100`,
+          'View Report',
+          'Export Report'
+        ).then(selection => {
+          if (selection === 'Export Report') {
+            exportAuditReport(report);
+          }
+        });
+      }
+
+      return report;
+    });
+  } catch (error) {
+    logger.error('Comprehensive audit failed', error);
+    vscode.window.showErrorMessage(`Audit failed: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+/**
+ * Export audit report
+ */
+async function exportAuditReport(report: any) {
+  const options: vscode.SaveDialogOptions = {
+    filters: {
+      'JSON': ['json'],
+      'Text': ['txt'],
+      'All Files': ['*']
+    },
+    defaultUri: vscode.Uri.file('comprehensive-audit-report.json')
+  };
+
+  const uri = await vscode.window.showSaveDialog(options);
+  if (uri) {
+    const { AuditRunner } = await import('./core/analyzer/auditRunner');
+    const runner = new AuditRunner(extensionContext);
+    const formattedReport = runner.getFormattedReport(report);
+
+    if (uri.fsPath.endsWith('.json')) {
+      const fs = await import('fs');
+      fs.writeFileSync(uri.fsPath, JSON.stringify(report, null, 2), 'utf-8');
+    } else {
+      const fs = await import('fs');
+      fs.writeFileSync(uri.fsPath, formattedReport, 'utf-8');
+    }
+
+    vscode.window.showInformationMessage('Audit report exported successfully!');
+  }
 }
 
 /**
