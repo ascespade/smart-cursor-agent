@@ -2,7 +2,8 @@
  * Agent calculator - determines optimal agent count
  */
 
-import { ProjectAnalysis } from '../../types';
+import { ProjectAnalysis, AgentRecommendation, ModelConfig } from '../../types';
+import { ModeDefinition } from '../../types/modes';
 import { ConfigManager } from '../../utils/config';
 
 export interface AgentCalculationResult {
@@ -13,92 +14,227 @@ export interface AgentCalculationResult {
 
 export class AgentCalculator {
   /**
-   * Calculate optimal agent count based on analysis
+   * Calculate optimal agent count based on analysis and mode
    */
-  calculate(analysis: ProjectAnalysis): AgentCalculationResult {
-    const defaultCount = ConfigManager.getDefaultAgentCount();
+  calculate(
+    analysis: ProjectAnalysis,
+    mode: ModeDefinition
+  ): AgentRecommendation {
+    // Calculate base agents (1-4)
+    const baseAgents = this.calculateBaseAgents(analysis.errors.total);
 
-    if (defaultCount > 0) {
-      return {
-        total: defaultCount,
-        perModel: Math.ceil(defaultCount / 2), // Assume 2 models by default
-        reasoning: [`Using configured default agent count: ${defaultCount}`]
-      };
-    }
+    // Maximum: 4 agents per model
+    const agentsPerModel = Math.min(4, baseAgents);
 
-    // Calculate based on error count
-    const errorBased = this.calculateFromErrors(analysis.errors.total);
+    // Total agents = agents per model × number of models
+    const totalAgents = agentsPerModel * mode.modelCount;
 
-    // Calculate based on complexity
-    const complexityBased = this.calculateFromComplexity(analysis.complexity);
+    // Select models based on mode
+    const models = this.selectModels(mode, agentsPerModel);
 
-    // Calculate based on project size
-    const sizeBased = this.calculateFromSize(analysis.size.files);
+    // Calculate time and cost
+    const estimatedTime = this.calculateTime(analysis.errors.total, totalAgents);
+    const estimatedCost = this.calculateCost(totalAgents, mode);
 
-    // Combine factors
-    const factors = [errorBased, complexityBased, sizeBased];
-    const total = Math.ceil(
-      factors.reduce((sum, f) => sum + f, 0) / factors.length
-    );
-
-    // Clamp between 2 and 12
-    const finalCount = Math.max(2, Math.min(12, total));
-
-    const reasoning = [
-      `Error count suggests ${errorBased} agents`,
-      `Complexity level (${analysis.complexity}) suggests ${complexityBased} agents`,
-      `Project size (${analysis.size.files} files) suggests ${sizeBased} agents`,
-      `Calculated optimal: ${finalCount} agents`
-    ];
+    // Generate reasoning
+    const reasoning = this.generateReasoning(analysis, mode, agentsPerModel);
 
     return {
-      total: finalCount,
-      perModel: Math.ceil(finalCount / 2),
-      reasoning
+      total: totalAgents,
+      perModel: agentsPerModel,
+      models: models,
+      strategy: {
+        type: mode.modelCount > 1 ? 'parallel' : 'sequential',
+        phases: this.generatePhases(models),
+        conflictResolution: 'auto'
+      },
+      estimatedTime: estimatedTime,
+      estimatedCost: estimatedCost,
+      reasoning: reasoning,
+      confidence: this.calculateConfidence(analysis)
     };
   }
 
   /**
-   * Calculate agents based on error count
+   * Calculate base agents (1-4) based on error count
    */
-  private calculateFromErrors(errorCount: number): number {
-    if (errorCount === 0) return 2;
-    if (errorCount < 10) return 2;
-    if (errorCount < 50) return 3;
-    if (errorCount < 100) return 4;
-    if (errorCount < 200) return 6;
-    if (errorCount < 500) return 8;
-    return 10;
+  private calculateBaseAgents(errorCount: number): number {
+    if (errorCount < 50) return 1;
+    if (errorCount < 150) return 2;
+    if (errorCount < 400) return 3;
+    return 4; // Maximum
   }
 
   /**
-   * Calculate agents based on complexity
+   * Select models based on mode
    */
-  private calculateFromComplexity(complexity: string): number {
-    switch (complexity) {
-      case 'low':
-        return 2;
-      case 'medium':
-        return 4;
-      case 'high':
-        return 6;
-      case 'very-high':
-        return 8;
-      default:
-        return 4;
+  private selectModels(mode: ModeDefinition, agentsPerModel: number): ModelConfig[] {
+    const allModels: Array<'ChatGPT' | 'Claude' | 'DeepSeek' | 'Gemini'> =
+      ['ChatGPT', 'Claude', 'DeepSeek', 'Gemini'];
+
+    const selectedModels = allModels.slice(0, mode.modelCount);
+
+    return selectedModels.map((name, index) => ({
+      name: name,
+      agents: agentsPerModel,
+      tasks: this.assignTasks(name, index, mode.modelCount),
+      priority: this.assignPriority(index, mode.modelCount),
+      branch: `agent-${name.toLowerCase()}-${Date.now()}`
+    }));
+  }
+
+  /**
+   * Assign tasks to models
+   */
+  private assignTasks(
+    modelName: string,
+    index: number,
+    totalModels: number
+  ): string[] {
+    const allTasks = [
+      'TypeScript errors',
+      'ESLint errors',
+      'Warnings',
+      'Code formatting',
+      'Import fixes',
+      'Type definitions',
+      'Test fixes',
+      'Documentation'
+    ];
+
+    if (totalModels === 1) {
+      return allTasks.slice(0, 5); // First 5 tasks
     }
+
+    // Distribute tasks evenly
+    const tasksPerModel = Math.ceil(allTasks.length / totalModels);
+    const start = index * tasksPerModel;
+    const end = start + tasksPerModel;
+
+    return allTasks.slice(start, end);
   }
 
   /**
-   * Calculate agents based on project size
+   * Assign priority
    */
-  private calculateFromSize(fileCount: number): number {
-    if (fileCount < 10) return 2;
-    if (fileCount < 50) return 3;
-    if (fileCount < 100) return 4;
-    if (fileCount < 200) return 6;
-    if (fileCount < 500) return 8;
-    return 10;
+  private assignPriority(
+    index: number,
+    totalModels: number
+  ): 'critical' | 'high' | 'medium' | 'low' {
+    if (index === 0) return 'critical';
+    if (index === 1) return 'high';
+    if (index === 2) return 'medium';
+    return 'low';
+  }
+
+  /**
+   * Calculate estimated time (in minutes)
+   */
+  private calculateTime(errorCount: number, totalAgents: number): number {
+    // Base: 2 minutes per error
+    const baseTime = errorCount * 2;
+
+    // Reduce time based on parallel processing
+    const timeWithParallelism = baseTime / Math.sqrt(totalAgents);
+
+    return Math.max(5, Math.round(timeWithParallelism));
+  }
+
+  /**
+   * Calculate estimated cost (in USD)
+   */
+  private calculateCost(totalAgents: number, mode: ModeDefinition): number {
+    if (mode.cost === 'free') return 0;
+
+    // Estimate: $0.50 per agent in Multi-Model Mode
+    const costPerAgent = 0.5;
+
+    return totalAgents * costPerAgent;
+  }
+
+  /**
+   * Generate reasoning
+   */
+  private generateReasoning(
+    analysis: ProjectAnalysis,
+    mode: ModeDefinition,
+    agentsPerModel: number
+  ): string[] {
+    const reasons: string[] = [];
+
+    // Agent count reason
+    reasons.push(
+      `${agentsPerModel} agents per model based on ${analysis.errors.total} total issues`
+    );
+
+    // Model count reason
+    if (mode.modelCount === 1) {
+      reasons.push(
+        'Single model (Auto Mode) - Cursor will intelligently switch between AI models'
+      );
+    } else {
+      reasons.push(
+        `${mode.modelCount} models for ${mode.modelCount === 2 ? 'balanced' : mode.modelCount === 3 ? 'comprehensive' : 'maximum'} coverage`
+      );
+    }
+
+    // Cost reason
+    if (mode.cost === 'free') {
+      reasons.push('Free mode - included in your Cursor subscription');
+    } else {
+      reasons.push('Multi-Model Mode requires API credits');
+    }
+
+    // Complexity reason
+    if (analysis.complexity === 'high' || analysis.complexity === 'very-high') {
+      reasons.push('High complexity detected - using maximum agents per model');
+    }
+
+    // Error density reason
+    if (analysis.errorDensity > 0.1) {
+      reasons.push(`High error density (${(analysis.errorDensity * 100).toFixed(1)}%) - needs thorough analysis`);
+    }
+
+    return reasons;
+  }
+
+  /**
+   * Calculate confidence
+   */
+  private calculateConfidence(analysis: ProjectAnalysis): number {
+    let confidence = 80; // Base confidence
+
+    // Reduce confidence for very complex projects
+    if (analysis.complexity === 'very-high') confidence -= 20;
+    else if (analysis.complexity === 'high') confidence -= 10;
+
+    // Increase confidence for small projects
+    if (analysis.errors.total < 100) confidence += 10;
+
+    return Math.max(50, Math.min(95, confidence));
+  }
+
+  /**
+   * Generate phases
+   */
+  private generatePhases(models: ModelConfig[]): any[] {
+    if (models.length === 1) {
+      return [{
+        name: 'Single Phase',
+        models: [models[0].name],
+        agents: models[0].agents,
+        estimatedTime: 0,
+        dependencies: []
+      }];
+    }
+
+    return [{
+      name: 'Parallel Execution',
+      models: models.map(m => m.name),
+      agents: models.reduce((sum, m) => sum + m.agents, 0),
+      estimatedTime: 0,
+      dependencies: []
+    }];
   }
 }
 

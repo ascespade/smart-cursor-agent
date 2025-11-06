@@ -35,8 +35,11 @@ export class ErrorCounter {
       this.countESLintErrors()
     ]);
 
-    const total = typescriptErrors + eslintErrors.errors;
+    // Total = TypeScript errors + ESLint errors + Warnings
+    const totalErrors = typescriptErrors + eslintErrors.errors;
     const warnings = eslintErrors.warnings;
+    // Total issues = errors + warnings
+    const totalIssues = totalErrors + warnings;
 
     const breakdown: ErrorBreakdown[] = [
       {
@@ -63,7 +66,7 @@ export class ErrorCounter {
       typescript: typescriptErrors,
       eslint: eslintErrors.errors,
       warnings,
-      total,
+      total: totalIssues, // Total issues = errors + warnings
       breakdown
     };
   }

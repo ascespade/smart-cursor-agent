@@ -5,7 +5,8 @@
 import * as vscode from 'vscode';
 import { ClipboardManager } from './clipboardManager';
 import { PromptBuilder } from './promptBuilder';
-import { ProjectAnalysis, AgentRecommendation, ModeConfig } from '../types';
+import { ProjectAnalysis, AgentRecommendation } from '../types';
+import { ModeDefinition } from '../types/modes';
 import { NotificationManager } from '../ui/notifications';
 
 export class CursorIntegration {
@@ -23,7 +24,7 @@ export class CursorIntegration {
   async openCursorWithPrompt(
     analysis: ProjectAnalysis,
     recommendation: AgentRecommendation,
-    mode: ModeConfig
+    mode: ModeDefinition
   ): Promise<void> {
     // Build prompt
     const prompt = this.promptBuilder.buildPrompt(analysis, recommendation, mode);
@@ -49,7 +50,7 @@ export class CursorIntegration {
   async generateAndCopyPrompt(
     analysis: ProjectAnalysis,
     recommendation: AgentRecommendation,
-    mode: ModeConfig
+    mode: ModeDefinition
   ): Promise<string> {
     const prompt = this.promptBuilder.buildPrompt(analysis, recommendation, mode);
     await this.clipboardManager.copyToClipboard(prompt);
