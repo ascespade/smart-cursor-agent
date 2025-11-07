@@ -179,7 +179,7 @@ export class ErrorCounter {
   }
 
   /**
-   * Count TypeScript errors - improved strategy: try diagnostics first, then command
+   * Count TypeScript errors - improved strategy: try tsc command first (most accurate), then diagnostics
    */
   private async countTypeScriptErrors(): Promise<number> {
     logInfo('Starting TypeScript error counting...');
@@ -190,78 +190,142 @@ export class ErrorCounter {
       return cached;
     }
 
-    // Strategy 1: Wait for and use VS Code diagnostics first (most reliable)
+    // Strategy 1: Try tsc command first (most accurate and reliable)
+    try {
+      // Ensure workspace root is properly normalized for Windows
+      const normalizedRoot = path.normalize(this.workspaceRoot);
+      logInfo(`Executing tsc command in directory: ${normalizedRoot}`);
+
+      // Try multiple command variations
+      const commands = [
+        ['tsc', '--noEmit', '--pretty', 'false'],
+        ['npx', 'tsc', '--noEmit', '--pretty', 'false'],
+        ['npx', '--yes', 'tsc', '--noEmit', '--pretty', 'false']
+      ];
+
+      for (const cmd of commands) {
+        try {
+          logInfo(`Trying command: ${cmd.join(' ')}`);
+          const result = await execa(cmd[0], cmd.slice(1), {
+            cwd: normalizedRoot,
+            reject: false,
+            timeout: 120000, // 2 minutes timeout
+            maxBuffer: 50 * 1024 * 1024, // 50MB buffer
+            shell: process.platform === 'win32', // Use shell on Windows for better path handling
+            env: {
+              ...process.env,
+              PATH: process.env.PATH
+            }
+          });
+
+          logInfo(`TypeScript command executed. Exit code: ${result.exitCode}`);
+          logInfo(`TypeScript stdout length: ${result.stdout.length}, stderr length: ${result.stderr.length}`);
+
+          // Check if command output is valid (not the "This is not the tsc command" message)
+          if (result.stdout.includes('This is not the tsc command') || result.stderr.includes('This is not the tsc command')) {
+            logWarn('Invalid tsc command detected, trying next variation...');
+            continue;
+          }
+
+          if (result.exitCode === 0) {
+            logInfo('TypeScript compilation successful - no errors found');
+            this.setCachedResult('typescript', 0);
+            return 0; // No errors
+          }
+
+          // Parse output to count errors
+          const errorCount = this.parseTypeScriptOutput(result.stdout, result.stderr);
+          logInfo(`Parsed TypeScript error count: ${errorCount}`);
+
+          // Validation: If exit code indicates errors but we got 0, log a warning
+          if (result.exitCode !== 0 && errorCount === 0) {
+            logWarn('TypeScript command failed but no errors were parsed. This might indicate a parsing issue.');
+            logWarn(`stdout sample: ${result.stdout.substring(0, 1000)}`);
+            logWarn(`stderr sample: ${result.stderr.substring(0, 1000)}`);
+            
+            // Try a more aggressive parsing approach
+            const aggressiveCount = this.parseTypeScriptOutputAggressive(result.stdout, result.stderr);
+            if (aggressiveCount > 0) {
+              logInfo(`Using aggressive parsing count: ${aggressiveCount}`);
+              this.setCachedResult('typescript', aggressiveCount);
+              return aggressiveCount;
+            }
+          }
+
+          // If we got a count > 0, use it
+          if (errorCount > 0) {
+            this.setCachedResult('typescript', errorCount);
+            return errorCount;
+          }
+        } catch (cmdError) {
+          logWarn(`Command ${cmd.join(' ')} failed: ${cmdError}, trying next...`);
+          continue;
+        }
+      }
+    } catch (error) {
+      logError('Failed to execute TypeScript command', error);
+    }
+
+    // Strategy 2: Fallback to VS Code diagnostics
+    logInfo('Falling back to VS Code diagnostics...');
     logInfo('Waiting for VS Code diagnostics to be ready...');
     const diagnosticsReady = await this.waitForDiagnostics(5000);
     
     if (diagnosticsReady) {
       const diagnosticsCount = await this.countTypeScriptErrorsFromDiagnostics();
       logInfo(`TypeScript errors from diagnostics: ${diagnosticsCount}`);
-      
-      // If we got a reasonable count from diagnostics, use it
-      if (diagnosticsCount > 0) {
-        this.setCachedResult('typescript', diagnosticsCount);
-        return diagnosticsCount;
-      }
-    }
-
-    // Strategy 2: Try tsc command as fallback
-    try {
-      // Ensure workspace root is properly normalized for Windows
-      const normalizedRoot = path.normalize(this.workspaceRoot);
-      logInfo(`Executing tsc command in directory: ${normalizedRoot}`);
-
-      // Try to run tsc --noEmit to get errors
-      const result = await execa('npx', ['tsc', '--noEmit', '--pretty', 'false'], {
-        cwd: normalizedRoot,
-        reject: false,
-        timeout: 60000, // Increased timeout
-        maxBuffer: 50 * 1024 * 1024, // 50MB buffer
-        shell: process.platform === 'win32', // Use shell on Windows for better path handling
-        env: {
-          ...process.env,
-          PATH: process.env.PATH
-        }
-      });
-
-      logInfo(`TypeScript command executed. Exit code: ${result.exitCode}`);
-      logInfo(`TypeScript stdout length: ${result.stdout.length}, stderr length: ${result.stderr.length}`);
-
-      if (result.exitCode === 0) {
-        logInfo('TypeScript compilation successful - no errors found');
-        this.setCachedResult('typescript', 0);
-        return 0; // No errors
-      }
-
-      // Parse output to count errors
-      const errorCount = this.parseTypeScriptOutput(result.stdout, result.stderr);
-      logInfo(`Parsed TypeScript error count: ${errorCount}`);
-
-      // Validation: If exit code indicates errors but we got 0, log a warning
-      if (result.exitCode !== 0 && errorCount === 0) {
-        logWarn('TypeScript command failed but no errors were parsed. This might indicate a parsing issue.');
-        logWarn(`stdout sample: ${result.stdout.substring(0, 500)}`);
-        logWarn(`stderr sample: ${result.stderr.substring(0, 500)}`);
-        
-        // Try diagnostics again as last resort
-        const diagnosticsCount = await this.countTypeScriptErrorsFromDiagnostics();
-        if (diagnosticsCount > 0) {
-          logInfo(`Using diagnostics count instead: ${diagnosticsCount}`);
-          this.setCachedResult('typescript', diagnosticsCount);
-          return diagnosticsCount;
-        }
-      }
-
-      this.setCachedResult('typescript', errorCount);
-      return errorCount;
-    } catch (error) {
-      logError('Failed to execute TypeScript command', error);
-      logWarn('Falling back to VS Code diagnostics for TypeScript errors');
-      // If tsc is not available, try to use VS Code diagnostics
-      const diagnosticsCount = await this.countTypeScriptErrorsFromDiagnostics();
       this.setCachedResult('typescript', diagnosticsCount);
       return diagnosticsCount;
     }
+
+    // Last resort: return 0
+    logWarn('Could not count TypeScript errors from command or diagnostics');
+    this.setCachedResult('typescript', 0);
+    return 0;
+  }
+
+  /**
+   * Aggressive parsing for TypeScript output - tries multiple approaches
+   */
+  private parseTypeScriptOutputAggressive(stdout: string, stderr: string): number {
+    const combinedOutput = (stderr || stdout || '').trim();
+    logInfo(`Aggressive parsing TypeScript output (total length: ${combinedOutput.length} chars)`);
+
+    if (!combinedOutput) {
+      return 0;
+    }
+
+    // Method 1: Count all "error TS" occurrences (most reliable)
+    const errorTSMatches = combinedOutput.match(/error\s+TS\d+/gi);
+    if (errorTSMatches && errorTSMatches.length > 0) {
+      logInfo(`Found ${errorTSMatches.length} errors using "error TS" pattern`);
+      return errorTSMatches.length;
+    }
+
+    // Method 2: Count all "TS" followed by numbers (error codes)
+    const tsErrorMatches = combinedOutput.match(/TS\d+/gi);
+    if (tsErrorMatches && tsErrorMatches.length > 0) {
+      logInfo(`Found ${tsErrorMatches.length} TS error codes`);
+      return tsErrorMatches.length;
+    }
+
+    // Method 3: Count lines with "error" and "TS"
+    const errorLines = combinedOutput
+      .split(/\r?\n/)
+      .filter(line => {
+        const lowerLine = line.toLowerCase().trim();
+        return lowerLine.includes('error') && lowerLine.includes('ts') && 
+               !lowerLine.startsWith('npm') && 
+               !lowerLine.startsWith('node') &&
+               !lowerLine.includes('This is not the tsc command');
+      });
+    
+    if (errorLines.length > 0) {
+      logInfo(`Found ${errorLines.length} error lines`);
+      return errorLines.length;
+    }
+
+    return 0;
   }
 
   /**
@@ -276,6 +340,24 @@ export class ErrorCounter {
       return 0;
     }
 
+    // First, try the most reliable method: count all "error TS" occurrences
+    // This is the most accurate way to count TypeScript errors
+    // Pattern: "error TS" followed by numbers (e.g., "error TS2322", "error TS2345")
+    const errorTSMatches = combinedOutput.match(/error\s+TS\d+/gi);
+    if (errorTSMatches && errorTSMatches.length > 0) {
+      const errorCount = errorTSMatches.length;
+      logInfo(`Found ${errorCount} TypeScript errors using "error TS" pattern matching`);
+      return errorCount;
+    }
+
+    // Also try: "error TS" with colon (e.g., "error TS2322:")
+    const errorTSColonMatches = combinedOutput.match(/error\s+TS\d+:/gi);
+    if (errorTSColonMatches && errorTSColonMatches.length > 0) {
+      const errorCount = errorTSColonMatches.length;
+      logInfo(`Found ${errorCount} TypeScript errors using "error TS:" pattern matching`);
+      return errorCount;
+    }
+
     // Use Set to avoid counting duplicate errors
     const errorSet = new Set<string>();
 
@@ -285,24 +367,41 @@ export class ErrorCounter {
       /^(.+?)\((\d+),(\d+)\):\s*error\s+TS(\d+):/gm,
       // Alternative: file.ts:line:col - error TS1234: message
       /^(.+?):(\d+):(\d+)\s*-\s*error\s+TS(\d+):/gm,
-      // Simple: error TS1234
+      // Simple: error TS1234 (case insensitive)
       /error\s+TS(\d+)/gi,
       // With file prefix: file.ts: error TS1234
       /^(.+?):\s*error\s+TS(\d+):/gm,
+      // Windows path format: D:\path\file.ts(line,col): error TS1234
+      /^([A-Z]:[\\\/].+?)\((\d+),(\d+)\):\s*error\s+TS(\d+):/gm,
+      // With colon: error TS1234:
+      /error\s+TS(\d+):/gi,
     ];
 
     // Try each pattern and collect unique errors
     for (const pattern of errorPatterns) {
-      const matches = combinedOutput.matchAll(pattern);
-      for (const match of matches) {
-        // Extract error code (TS number)
-        const errorCode = match[4] || match[1] || match[2] || match[5];
-        if (errorCode) {
-          // Create unique identifier: file + line + error code
-          const file = match[1] || '';
-          const line = match[2] || match[3] || '';
-          const uniqueId = `${file}:${line}:TS${errorCode}`;
-          errorSet.add(uniqueId);
+      try {
+        const matches = combinedOutput.matchAll(pattern);
+        for (const match of matches) {
+          // Extract error code (TS number)
+          const errorCode = match[4] || match[1] || match[2] || match[5];
+          if (errorCode) {
+            // Create unique identifier: file + line + error code
+            const file = match[1] || '';
+            const line = match[2] || match[3] || '';
+            const uniqueId = `${file}:${line}:TS${errorCode}`;
+            errorSet.add(uniqueId);
+          }
+        }
+      } catch (error) {
+        // Pattern might not support matchAll, try match instead
+        const matches = combinedOutput.match(pattern);
+        if (matches) {
+          for (const match of matches) {
+            const errorCodeMatch = match.match(/TS(\d+)/i);
+            if (errorCodeMatch) {
+              errorSet.add(`TS${errorCodeMatch[1]}`);
+            }
+          }
         }
       }
     }
@@ -318,7 +417,8 @@ export class ErrorCounter {
           const lowerLine = line.toLowerCase().trim();
           return (lowerLine.includes('error ts') || lowerLine.includes('error: ts')) && 
                  !lowerLine.startsWith('npm') && 
-                 !lowerLine.startsWith('node');
+                 !lowerLine.startsWith('node') &&
+                 !lowerLine.includes('This is not the tsc command');
         });
       errorCount = errorLines.length;
       logInfo(`Fallback line-based counting found ${errorCount} error lines`);
@@ -328,8 +428,15 @@ export class ErrorCounter {
     if (errorCount === 0 && (stdout.includes('error') || stderr.includes('error'))) {
       logWarn('Output contains "error" but no TypeScript errors were matched. Output might be in unexpected format.');
       // Log sample for debugging
-      const sample = combinedOutput.substring(0, 1000);
-      logWarn(`Output sample: ${sample}`);
+      const sample = combinedOutput.substring(0, 2000);
+      logWarn(`Output sample (first 2000 chars): ${sample}`);
+      
+      // Try one more time with a simpler approach
+      const simpleErrorCount = (combinedOutput.match(/TS\d+/gi) || []).length;
+      if (simpleErrorCount > 0) {
+        logInfo(`Found ${simpleErrorCount} TS error codes using simple pattern`);
+        return simpleErrorCount;
+      }
     }
 
     return errorCount;
