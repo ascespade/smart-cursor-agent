@@ -5,21 +5,32 @@
 import { ErrorCounter } from './errorCounter';
 import { ComplexityCalculator } from './complexityCalculator';
 import { ErrorDetailsCollector } from './errorDetails';
+import { TrendAnalyzer } from './trendAnalyzer';
+import { RecommendationEngine } from './recommendationEngine';
 import { getWorkspaceRoot, readJsonFile } from '../../utils/helpers';
 import * as fs from 'fs';
 import * as path from 'path';
 import fg from 'fast-glob';
 import { ProjectAnalysis, ProjectType } from '../../types';
+import * as vscode from 'vscode';
 
 export class ProjectAnalyzer {
   private workspaceRoot: string;
+  private trendAnalyzer: TrendAnalyzer | null = null;
+  private recommendationEngine: RecommendationEngine | null = null;
 
-  constructor() {
+  constructor(context?: vscode.ExtensionContext) {
     const root = getWorkspaceRoot();
     if (!root) {
       throw new Error('No workspace folder open');
     }
     this.workspaceRoot = root;
+
+    // Initialize trend analyzer if context is provided
+    if (context) {
+      this.trendAnalyzer = new TrendAnalyzer(context);
+      this.recommendationEngine = new RecommendationEngine();
+    }
   }
 
   /**
@@ -51,7 +62,7 @@ export class ProjectAnalyzer {
       console.warn('Failed to collect error details:', error);
     }
 
-    return {
+    const analysis: ProjectAnalysis = {
       errors,
       size,
       dependencies,
@@ -60,6 +71,52 @@ export class ProjectAnalyzer {
       timestamp: new Date(),
       projectType
     };
+
+    // Log final analysis for debugging
+    console.log('Final Project Analysis:', JSON.stringify({
+      errors: {
+        typescript: analysis.errors.typescript,
+        eslint: analysis.errors.eslint,
+        warnings: analysis.errors.warnings,
+        total: analysis.errors.total
+      },
+      size: analysis.size,
+      complexity: analysis.complexity,
+      errorDensity: analysis.errorDensity,
+      projectType: analysis.projectType
+    }, null, 2));
+
+    // Save trend if trend analyzer is available
+    if (this.trendAnalyzer) {
+      try {
+        await this.trendAnalyzer.saveTrend(analysis);
+      } catch (error) {
+        console.warn('Failed to save trend:', error);
+      }
+    }
+
+    return analysis;
+  }
+
+  /**
+   * Get trend analysis
+   */
+  async getTrendAnalysis() {
+    if (!this.trendAnalyzer) {
+      throw new Error('Trend analyzer not initialized. Provide context in constructor.');
+    }
+    return this.trendAnalyzer.analyzeTrends();
+  }
+
+  /**
+   * Get recommendations
+   */
+  async getRecommendations() {
+    if (!this.recommendationEngine) {
+      throw new Error('Recommendation engine not initialized. Provide context in constructor.');
+    }
+    const analysis = await this.analyze();
+    return this.recommendationEngine.generateRecommendations(analysis);
   }
 
   /**

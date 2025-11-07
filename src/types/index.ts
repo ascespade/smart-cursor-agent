@@ -136,3 +136,87 @@ export interface SecurityReport {
   passed: boolean;
 }
 
+// Trend Analysis Types
+export interface ErrorTrend {
+  date: Date;
+  typescript: number;
+  eslint: number;
+  warnings: number;
+  total: number;
+}
+
+export interface TrendAnalysis {
+  trends: ErrorTrend[];
+  improvement: number; // percentage
+  daysAnalyzed: number;
+  averageErrors: number;
+  peakErrors: number;
+  currentErrors: number;
+}
+
+// Smart Recommendations Types
+export interface Recommendation {
+  type: 'fix' | 'refactor' | 'optimize' | 'security';
+  priority: 'high' | 'medium' | 'low';
+  message: string;
+  files: string[];
+  estimatedTime: number; // minutes
+  impact: string;
+  confidence: number; // 0-100
+}
+
+export interface RecommendationsReport {
+  recommendations: Recommendation[];
+  totalEstimatedTime: number;
+  totalImpact: string;
+  priorityOrder: Recommendation[];
+}
+
+// Git Integration Types
+export interface BranchComparison {
+  current: {
+    typescript: number;
+    eslint: number;
+    warnings: number;
+    total: number;
+  };
+  target: {
+    typescript: number;
+    eslint: number;
+    warnings: number;
+    total: number;
+  };
+  diff: {
+    typescript: number;
+    eslint: number;
+    warnings: number;
+    total: number;
+  };
+  improved: boolean;
+}
+
+// Auto-fix Types
+export interface FixResult {
+  fixed: number;
+  remaining: number;
+  files: string[];
+  errors: Array<{
+    file: string;
+    line: number;
+    message: string;
+    fixed: boolean;
+  }>;
+  duration: number; // seconds
+}
+
+// Error by File Types
+export interface ErrorByFile {
+  file: string;
+  errors: number;
+  warnings: number;
+  typescriptErrors: number;
+  eslintErrors: number;
+  lines: number;
+  lastModified: Date;
+}
+
