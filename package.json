@@ -107,6 +107,48 @@
         "icon": "$(checklist)"
       },
       {
+        "command": "smartAgent.organizeProject",
+        "title": "Organize Project",
+        "category": "Smart Agent",
+        "icon": "$(folder)"
+      },
+      {
+        "command": "smartAgent.cleanProject",
+        "title": "Clean Project",
+        "category": "Smart Agent",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "smartAgent.applyBestPractices",
+        "title": "Apply Best Practices",
+        "category": "Smart Agent",
+        "icon": "$(sparkle)"
+      },
+      {
+        "command": "smartAgent.finalizeProject",
+        "title": "Finalize Project for Deployment",
+        "category": "Smart Agent",
+        "icon": "$(rocket)"
+      },
+      {
+        "command": "smartAgent.enableProtection",
+        "title": "Enable Protection Mode",
+        "category": "Smart Agent",
+        "icon": "$(shield)"
+      },
+      {
+        "command": "smartAgent.disableProtection",
+        "title": "Disable Protection Mode",
+        "category": "Smart Agent",
+        "icon": "$(shield)"
+      },
+      {
+        "command": "smartAgent.enableStrictProtection",
+        "title": "Enable Strict Protection Mode",
+        "category": "Smart Agent",
+        "icon": "$(lock)"
+      },
+      {
         "command": "smartAgent.api.analyze",
         "title": "API: Analyze Project",
         "category": "Smart Agent API"
@@ -270,7 +312,7 @@
         {
           "id": "smartAgent",
           "title": "Smart Agent",
-          "icon": "resources/icons/sidebar.svg"
+          "icon": "resources/icons/logo.png"
         }
       ]
     },

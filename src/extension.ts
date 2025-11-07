@@ -88,7 +88,14 @@ function registerCommands(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('smartAgent.exportReport', exportReport),
     vscode.commands.registerCommand('smartAgent.openPlayground', openPlayground),
     vscode.commands.registerCommand('smartAgent.help', showHelp),
-    vscode.commands.registerCommand('smartAgent.comprehensiveAudit', comprehensiveAudit)
+    vscode.commands.registerCommand('smartAgent.comprehensiveAudit', comprehensiveAudit),
+    vscode.commands.registerCommand('smartAgent.organizeProject', organizeProject),
+    vscode.commands.registerCommand('smartAgent.cleanProject', cleanProject),
+    vscode.commands.registerCommand('smartAgent.applyBestPractices', applyBestPractices),
+    vscode.commands.registerCommand('smartAgent.finalizeProject', finalizeProject),
+    vscode.commands.registerCommand('smartAgent.enableProtection', enableProtection),
+    vscode.commands.registerCommand('smartAgent.disableProtection', disableProtection),
+    vscode.commands.registerCommand('smartAgent.enableStrictProtection', enableStrictProtection)
   );
 }
 
@@ -1425,6 +1432,202 @@ async function exportAuditReport(report: any) {
 
     vscode.window.showInformationMessage('Audit report exported successfully!');
   }
+}
+
+/**
+ * Organize Project
+ */
+async function organizeProject() {
+  const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+  if (!workspaceFolder) {
+    vscode.window.showErrorMessage('No workspace folder open!');
+    return;
+  }
+
+  try {
+    logger.info('📁 Starting project organization...');
+    
+    await vscode.window.withProgress({
+      location: vscode.ProgressLocation.Notification,
+      title: 'Organizing Project',
+      cancellable: false
+    }, async (progress) => {
+      const { ProjectOrganizer } = await import('./core/organizer/projectOrganizer');
+      const organizer = new ProjectOrganizer();
+      
+      progress.report({ increment: 0, message: 'Creating folder structure...' });
+      progress.report({ increment: 30, message: 'Organizing files...' });
+      progress.report({ increment: 30, message: 'Fixing imports...' });
+      progress.report({ increment: 20, message: 'Creating index files...' });
+      progress.report({ increment: 20, message: 'Finalizing...' });
+
+      const result = await organizer.organizeProject();
+      return result;
+    });
+  } catch (error) {
+    logger.error('Project organization failed', error);
+    vscode.window.showErrorMessage(`Failed to organize project: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+/**
+ * Clean Project
+ */
+async function cleanProject() {
+  const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+  if (!workspaceFolder) {
+    vscode.window.showErrorMessage('No workspace folder open!');
+    return;
+  }
+
+  try {
+    logger.info('🧹 Starting project cleaning...');
+    
+    const choice = await vscode.window.showWarningMessage(
+      'This will remove unused files, imports, console.logs, and commented code. Continue?',
+      { modal: true },
+      'Yes',
+      'No'
+    );
+
+    if (choice !== 'Yes') {
+      return;
+    }
+
+    await vscode.window.withProgress({
+      location: vscode.ProgressLocation.Notification,
+      title: 'Cleaning Project',
+      cancellable: false
+    }, async (progress) => {
+      const { ProjectCleaner } = await import('./core/cleaner/projectCleaner');
+      const cleaner = new ProjectCleaner();
+      
+      progress.report({ increment: 0, message: 'Removing unused files...' });
+      progress.report({ increment: 20, message: 'Removing unused imports...' });
+      progress.report({ increment: 20, message: 'Removing console.logs...' });
+      progress.report({ increment: 20, message: 'Removing commented code...' });
+      progress.report({ increment: 20, message: 'Cleaning build artifacts...' });
+      progress.report({ increment: 20, message: 'Finalizing...' });
+
+      const result = await cleaner.cleanProject();
+      return result;
+    });
+  } catch (error) {
+    logger.error('Project cleaning failed', error);
+    vscode.window.showErrorMessage(`Failed to clean project: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+/**
+ * Apply Best Practices
+ */
+async function applyBestPractices() {
+  const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+  if (!workspaceFolder) {
+    vscode.window.showErrorMessage('No workspace folder open!');
+    return;
+  }
+
+  try {
+    logger.info('✨ Starting best practices application...');
+    
+    await vscode.window.withProgress({
+      location: vscode.ProgressLocation.Notification,
+      title: 'Applying Best Practices',
+      cancellable: false
+    }, async (progress) => {
+      const { BestPracticesApplier } = await import('./core/bestPractices/bestPracticesApplier');
+      const applier = new BestPracticesApplier();
+      
+      progress.report({ increment: 0, message: 'Applying TypeScript best practices...' });
+      progress.report({ increment: 20, message: 'Applying React best practices...' });
+      progress.report({ increment: 20, message: 'Applying code organization...' });
+      progress.report({ increment: 20, message: 'Applying performance best practices...' });
+      progress.report({ increment: 20, message: 'Applying security best practices...' });
+      progress.report({ increment: 20, message: 'Finalizing...' });
+
+      const result = await applier.applyBestPractices();
+      return result;
+    });
+  } catch (error) {
+    logger.error('Best practices application failed', error);
+    vscode.window.showErrorMessage(`Failed to apply best practices: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+/**
+ * Finalize Project
+ */
+async function finalizeProject() {
+  const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+  if (!workspaceFolder) {
+    vscode.window.showErrorMessage('No workspace folder open!');
+    return;
+  }
+
+  try {
+    logger.info('🚀 Starting project finalization...');
+    
+    await vscode.window.withProgress({
+      location: vscode.ProgressLocation.Notification,
+      title: 'Finalizing Project for Deployment',
+      cancellable: false
+    }, async (progress) => {
+      const { ProjectFinalizer } = await import('./core/finalizer/projectFinalizer');
+      const finalizer = new ProjectFinalizer();
+      
+      progress.report({ increment: 0, message: 'Running type check...' });
+      progress.report({ increment: 15, message: 'Running linting...' });
+      progress.report({ increment: 15, message: 'Running tests...' });
+      progress.report({ increment: 15, message: 'Running security scan...' });
+      progress.report({ increment: 15, message: 'Building project...' });
+      progress.report({ increment: 15, message: 'Optimizing build...' });
+      progress.report({ increment: 15, message: 'Generating deployment files...' });
+      progress.report({ increment: 10, message: 'Finalizing...' });
+
+      const result = await finalizer.finalizeProject();
+      return result;
+    });
+  } catch (error) {
+    logger.error('Project finalization failed', error);
+    vscode.window.showErrorMessage(`Failed to finalize project: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+/**
+ * Enable Protection Mode
+ */
+async function enableProtection() {
+  const { ProtectionMode } = await import('./core/protection/protectionMode');
+  const protection = ProtectionMode.getInstance();
+  await protection.enable(false);
+  
+  // Store in context for later use
+  extensionContext.globalState.update('protectionMode', { enabled: true, strict: false });
+}
+
+/**
+ * Disable Protection Mode
+ */
+async function disableProtection() {
+  const { ProtectionMode } = await import('./core/protection/protectionMode');
+  const protection = ProtectionMode.getInstance();
+  await protection.disable();
+  
+  // Update context
+  extensionContext.globalState.update('protectionMode', { enabled: false, strict: false });
+}
+
+/**
+ * Enable Strict Protection Mode
+ */
+async function enableStrictProtection() {
+  const { ProtectionMode } = await import('./core/protection/protectionMode');
+  const protection = ProtectionMode.getInstance();
+  await protection.enable(true);
+  
+  // Store in context for later use
+  extensionContext.globalState.update('protectionMode', { enabled: true, strict: true });
 }
 
 /**
