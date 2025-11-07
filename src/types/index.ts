@@ -220,3 +220,46 @@ export interface ErrorByFile {
   lastModified: Date;
 }
 
+// Comprehensive Audit Types
+export interface AuditIssue {
+  file: string;
+  line: number;
+  column?: number;
+  type: 'TypeScript' | 'ESLint' | 'Syntax' | 'Build' | 'Dependency' | 'Configuration' | 'Logic' | 'Suppression';
+  severity: 'Critical' | 'High' | 'Medium' | 'Low';
+  issue: string;
+  fix: string;
+  code?: string;
+}
+
+export interface Suppression {
+  file: string;
+  line: number;
+  type: '@ts-ignore' | '@ts-expect-error' | '@ts-nocheck' | 'eslint-disable' | 'eslint-disable-next-line' | 'eslint-disable-line';
+  reason?: string;
+  rule?: string;
+  shouldRemove: boolean;
+}
+
+export interface AuditReport {
+  passed: boolean;
+  totalFiles: number;
+  totalErrors: number;
+  totalWarnings: number;
+  totalSuppressions: number;
+  errors: AuditIssue[];
+  warnings: AuditIssue[];
+  suppressions: Suppression[];
+  businessLogicConcerns: string[];
+  summary: {
+    typescript: { errors: number; warnings: number };
+    eslint: { errors: number; warnings: number };
+    build: { errors: number; warnings: number };
+    syntax: { errors: number; warnings: number };
+    dependencies: { errors: number; warnings: number };
+    suppressions: number;
+  };
+  codeQualityScore: number;
+  timestamp: Date;
+}
+

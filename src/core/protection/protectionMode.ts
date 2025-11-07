@@ -269,7 +269,7 @@ export class ProtectionMode {
     try {
       // Run comprehensive audit
       const auditor = new ComprehensiveAuditor();
-      const auditReport = await auditor.audit();
+      const auditReport: AuditReport = await auditor.audit();
 
       const hasErrors = auditReport.totalErrors > 0;
       const hasWarnings = auditReport.totalWarnings > 0;

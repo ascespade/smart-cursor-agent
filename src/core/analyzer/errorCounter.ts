@@ -60,7 +60,7 @@ function logWarn(message: string, ...args: unknown[]): void {
 
 export class ErrorCounter {
   private workspaceRoot: string;
-  private resultCache: Map<string, { count: number; timestamp: number }> = new Map();
+  private resultCache: Map<string, { count: number | { errors: number; warnings: number }; timestamp: number }> = new Map();
   private readonly CACHE_TTL = 5000; // 5 seconds
 
   constructor() {
@@ -99,8 +99,11 @@ export class ErrorCounter {
   private getCachedResult(key: string): number | null {
     const cached = this.resultCache.get(key);
     if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
-      logInfo(`Using cached result for ${key}: ${cached.count}`);
-      return cached.count;
+      const count = cached.count;
+      if (typeof count === 'number') {
+        logInfo(`Using cached result for ${key}: ${count}`);
+        return count;
+      }
     }
     return null;
   }
@@ -480,8 +483,11 @@ export class ErrorCounter {
     const cachedKey = 'eslint';
     const cached = this.resultCache.get(cachedKey);
     if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
-      logInfo(`Using cached ESLint result: errors=${(cached.count as any).errors}, warnings=${(cached.count as any).warnings}`);
-      return cached.count as { errors: number; warnings: number };
+      const cachedResult = cached.count as { errors: number; warnings: number } | number;
+      if (typeof cachedResult === 'object' && 'errors' in cachedResult && 'warnings' in cachedResult) {
+        logInfo(`Using cached ESLint result: errors=${cachedResult.errors}, warnings=${cachedResult.warnings}`);
+        return cachedResult;
+      }
     }
 
     // Strategy 1: Wait for and use VS Code diagnostics first (most reliable)

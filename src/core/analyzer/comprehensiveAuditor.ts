@@ -9,48 +9,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { getWorkspaceRoot } from '../../utils/helpers';
 import fg from 'fast-glob';
-
-export interface AuditIssue {
-  file: string;
-  line: number;
-  column?: number;
-  type: 'TypeScript' | 'ESLint' | 'Syntax' | 'Build' | 'Dependency' | 'Configuration' | 'Logic' | 'Suppression';
-  severity: 'Critical' | 'High' | 'Medium' | 'Low';
-  issue: string;
-  fix: string;
-  code?: string;
-}
-
-export interface Suppression {
-  file: string;
-  line: number;
-  type: '@ts-ignore' | '@ts-expect-error' | '@ts-nocheck' | 'eslint-disable' | 'eslint-disable-next-line' | 'eslint-disable-line';
-  reason?: string;
-  rule?: string;
-  shouldRemove: boolean;
-}
-
-export interface AuditReport {
-  passed: boolean;
-  totalFiles: number;
-  totalErrors: number;
-  totalWarnings: number;
-  totalSuppressions: number;
-  errors: AuditIssue[];
-  warnings: AuditIssue[];
-  suppressions: Suppression[];
-  businessLogicConcerns: string[];
-  summary: {
-    typescript: { errors: number; warnings: number };
-    eslint: { errors: number; warnings: number };
-    build: { errors: number; warnings: number };
-    syntax: { errors: number; warnings: number };
-    dependencies: { errors: number; warnings: number };
-    suppressions: number;
-  };
-  codeQualityScore: number;
-  timestamp: Date;
-}
+import type { AuditIssue, Suppression, AuditReport } from '../../types';
 
 export class ComprehensiveAuditor {
   private workspaceRoot: string;
@@ -330,7 +289,7 @@ export class ComprehensiveAuditor {
               file,
               line: lineNumber,
               type: '@ts-expect-error',
-              shouldRemove: false, // @ts-expect-error is safer
+              shouldRemove: false, // ts-expect-error is safer than ts-ignore
               reason: 'Expected TypeScript error'
             });
           }

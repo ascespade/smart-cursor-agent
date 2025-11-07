@@ -2,7 +2,8 @@
  * Audit Runner - Runs comprehensive audit and generates report
  */
 
-import { ComprehensiveAuditor, AuditReport } from './comprehensiveAuditor';
+import { ComprehensiveAuditor } from './comprehensiveAuditor';
+import type { AuditReport } from '../../types';
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';

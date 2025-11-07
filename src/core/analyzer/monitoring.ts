@@ -24,7 +24,7 @@ export class MonitoringService {
     this.isMonitoring = true;
 
     // Listen to diagnostics changes
-    this.diagnosticsListener = vscode.workspace.onDidChangeDiagnostics(async () => {
+    this.diagnosticsListener = vscode.languages.onDidChangeDiagnostics(async () => {
       await this.checkForChanges();
     });
 
